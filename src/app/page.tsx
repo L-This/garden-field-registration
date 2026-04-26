@@ -8,7 +8,7 @@ export default function HomePage() {
 
   return (
     <main className="home-page" dir="rtl">
-      <section className="home-hero">
+      <section className="home-hero legendary-hero">
         <div className="hero-badge-home">
           <ShieldCheck size={17} />
           نظام ميداني مستقل
@@ -30,18 +30,24 @@ export default function HomePage() {
       <section className="home-summary-grid">
         <div className="home-summary-card">
           <Leaf size={24} />
-          <span>إجمالي المشاريع</span>
-          <strong>{projects.length}</strong>
+          <div>
+            <span>إجمالي المشاريع</span>
+            <strong>{projects.length}</strong>
+          </div>
         </div>
         <div className="home-summary-card">
           <BarChart3 size={24} />
-          <span>إجمالي الحدائق</span>
-          <strong>{totalGardens}</strong>
+          <div>
+            <span>إجمالي الحدائق</span>
+            <strong>{totalGardens}</strong>
+          </div>
         </div>
         <div className="home-summary-card">
           <UploadCloud size={24} />
-          <span>طريقة التسجيل</span>
-          <strong>يومي</strong>
+          <div>
+            <span>طريقة التسجيل</span>
+            <strong>يومي</strong>
+          </div>
         </div>
       </section>
 
