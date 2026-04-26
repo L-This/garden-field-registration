@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
   ArrowLeft,
@@ -17,8 +17,7 @@ import {
   Sprout,
   XCircle,
 } from 'lucide-react';
-import { getProject } from '@/data/projects';
-import { getGardensByProject } from '@/data/gardens';
+import { supabase } from '@/lib/supabase';
 import { submitIrrigationReport } from '@/lib/api';
 
 type DraftStatus = 'empty' | 'ready' | 'missing-location' | 'sent' | 'duplicate' | 'failed';
@@ -39,7 +38,23 @@ type GardenDraft = {
 type FieldSubmitResult = {
   ok: boolean;
   message: string;
-  details?: unknown[];
+  sent?: number;
+  duplicates?: number;
+  failed?: number;
+};
+
+type UiProject = {
+  id: string;
+  name: string;
+  district: string;
+  contractorLabel: string;
+  accent: string;
+};
+
+type UiGarden = {
+  id: string;
+  name: string;
+  zone?: string;
 };
 
 const todayLabel = new Intl.DateTimeFormat('ar-SA', {
@@ -61,8 +76,11 @@ function fileToBase64(file: File): Promise<string> {
 export default function ProjectPage() {
   const params = useParams();
   const projectId = String(params.projectId || '');
-  const project = getProject(projectId);
-  const gardens = useMemo(() => getGardensByProject(projectId), [projectId]);
+
+  const [project, setProject] = useState<UiProject | null>(null);
+  const [gardens, setGardens] = useState<UiGarden[]>([]);
+  const [loadingPage, setLoadingPage] = useState(true);
+  const [pageError, setPageError] = useState('');
 
   const [drafts, setDrafts] = useState<Record<string, GardenDraft>>({});
   const [query, setQuery] = useState('');
@@ -71,17 +89,59 @@ export default function ProjectPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<FieldSubmitResult | null>(null);
 
-  if (!project) {
-    return (
-      <main className="project-page">
-        <section className="project-empty-state">
-          <h1>المشروع غير موجود</h1>
-          <p>تأكد من رابط المشروع أو ارجع للصفحة الرئيسية.</p>
-          <Link href="/" className="primary-link">العودة للرئيسية</Link>
-        </section>
-      </main>
-    );
-  }
+  useEffect(() => {
+    async function loadProject() {
+      setLoadingPage(true);
+      setPageError('');
+      setProject(null);
+      setGardens([]);
+      setDrafts({});
+      setResult(null);
+
+      const { data: projectRow, error: projectError } = await supabase
+        .from('projects')
+        .select('id, slug, name, district, contractor_label, accent')
+        .eq('slug', projectId)
+        .single();
+
+      if (projectError || !projectRow) {
+        setPageError('المشروع غير موجود في قاعدة البيانات.');
+        setLoadingPage(false);
+        return;
+      }
+
+      const { data: gardenRows, error: gardensError } = await supabase
+        .from('gardens')
+        .select('id, name')
+        .eq('project_id', projectRow.id)
+        .eq('active', true)
+        .order('created_at', { ascending: true });
+
+      if (gardensError) {
+        setPageError('تعذر تحميل حدائق المشروع.');
+        setLoadingPage(false);
+        return;
+      }
+
+      setProject({
+        id: projectRow.slug,
+        name: projectRow.name,
+        district: projectRow.district || 'بدون نطاق',
+        contractorLabel: projectRow.contractor_label || 'مدير المشروع',
+        accent: projectRow.accent || 'emerald',
+      });
+
+      setGardens((gardenRows || []).map((garden) => ({
+        id: garden.id,
+        name: garden.name,
+      })));
+
+      setManagerName(projectRow.contractor_label || 'مدير المشروع');
+      setLoadingPage(false);
+    }
+
+    if (projectId) loadProject();
+  }, [projectId]);
 
   const updateDraft = (gardenId: string, patch: Partial<GardenDraft>) => {
     const garden = gardens.find((item) => item.id === gardenId);
@@ -149,16 +209,18 @@ export default function ProjectPage() {
   const readyCount = readyDrafts.length;
   const progress = gardens.length ? Math.round((readyCount / gardens.length) * 100) : 0;
 
-  const filteredGardens = gardens.filter((garden) => {
-    const draft = drafts[garden.id];
-    const matchesQuery = garden.name.includes(query) || Boolean(garden.zone?.includes(query));
+  const filteredGardens = useMemo(() => {
+    return gardens.filter((garden) => {
+      const draft = drafts[garden.id];
+      const matchesQuery = garden.name.includes(query) || Boolean(garden.zone?.includes(query));
 
-    if (!matchesQuery) return false;
-    if (filter === 'ready') return draft?.status === 'ready';
-    if (filter === 'missing') return draft?.status === 'missing-location';
-    if (filter === 'empty') return !draft || draft.status === 'empty';
-    return true;
-  });
+      if (!matchesQuery) return false;
+      if (filter === 'ready') return draft?.status === 'ready';
+      if (filter === 'missing') return draft?.status === 'missing-location';
+      if (filter === 'empty') return !draft || draft.status === 'empty';
+      return true;
+    });
+  }, [gardens, drafts, query, filter]);
 
   const submitReport = async () => {
     if (!readyDrafts.length) return;
@@ -171,24 +233,46 @@ export default function ProjectPage() {
         projectId,
         managerName,
         submittedAt: new Date().toISOString(),
-        records: readyDrafts as any,
+        records: readyDrafts,
       });
 
-      setResult({
-        ok: Boolean(response?.ok),
-        message: response?.message || 'تم إرسال التقرير.',
-        details: [],
-      });
+      setResult(response);
     } catch {
       setResult({
         ok: false,
         message: 'تعذر إرسال التقرير. تحقق من الربط الخلفي ثم أعد المحاولة.',
-        details: [],
+        sent: 0,
+        duplicates: 0,
+        failed: readyDrafts.length,
       });
     } finally {
       setLoading(false);
     }
   };
+
+  if (loadingPage) {
+    return (
+      <main className="project-page field-shell" dir="rtl">
+        <section className="project-empty-state">
+          <Loader2 className="spin" size={34} />
+          <h1>جاري تحميل المشروع</h1>
+          <p>يتم الآن جلب الحدائق من Supabase.</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (pageError || !project) {
+    return (
+      <main className="project-page">
+        <section className="project-empty-state">
+          <h1>المشروع غير موجود</h1>
+          <p>{pageError || 'تأكد من رابط المشروع أو ارجع للصفحة الرئيسية.'}</p>
+          <Link href="/" className="primary-link">العودة للرئيسية</Link>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="project-page field-shell" dir="rtl">
@@ -256,7 +340,7 @@ export default function ProjectPage() {
                 <div className="garden-icon"><Sprout size={22} /></div>
                 <div>
                   <h3>{garden.name}</h3>
-                  <p>{garden.zone || 'بدون نطاق'}</p>
+                  <p>{garden.zone || project.district}</p>
                 </div>
               </div>
 
@@ -314,7 +398,9 @@ export default function ProjectPage() {
         <section className={`result-toast ${result.ok ? 'success' : 'danger'}`}>
           <strong>{result.ok ? 'تمت العملية' : 'تعذر الإرسال'}</strong>
           <p>{result.message}</p>
-          <small>{result.ok ? 'تم استقبال نتيجة الإرسال.' : 'لم يتم حفظ التقرير.'}</small>
+          <small>
+            تم: {result.sent || 0} | مكرر: {result.duplicates || 0} | فشل: {result.failed || 0}
+          </small>
         </section>
       )}
     </main>
