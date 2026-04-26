@@ -1088,3 +1088,159 @@ button {
     grid-template-columns: 1fr !important;
   }
 }
+/* ألصق هذا الكود في آخر src/styles/globals.css */
+
+/* الهيدر: موجة ضوئية خفيفة */
+.home-hero,
+.legendary-hero {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.home-hero::before,
+.legendary-hero::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: -45% -20% !important;
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 38%,
+    rgba(255, 255, 255, 0.22) 50%,
+    rgba(255, 255, 255, 0.08) 62%,
+    transparent 100%
+  ) !important;
+  transform: translateX(-35%) rotate(4deg) !important;
+  animation: headerLightSweep 7s ease-in-out infinite !important;
+  pointer-events: none !important;
+}
+
+@keyframes headerLightSweep {
+  0%, 18% {
+    transform: translateX(-45%) rotate(4deg);
+    opacity: 0;
+  }
+  45% {
+    opacity: 1;
+  }
+  75%, 100% {
+    transform: translateX(45%) rotate(4deg);
+    opacity: 0;
+  }
+}
+
+/* بطاقات الإحصائيات النهائية */
+.home-summary-grid {
+  gap: 22px !important;
+  margin: 0 0 38px !important;
+}
+
+.home-summary-card {
+  min-height: 138px !important;
+  padding: 28px 30px !important;
+  border-radius: 34px !important;
+}
+
+.home-summary-card span {
+  font-size: 16px !important;
+  color: #647d76 !important;
+  margin-bottom: 10px !important;
+}
+
+.home-summary-card strong {
+  font-size: 46px !important;
+  font-weight: 950 !important;
+}
+
+.home-summary-card svg {
+  width: 64px !important;
+  height: 64px !important;
+  padding: 16px !important;
+  border-radius: 24px !important;
+}
+
+/* كروت المشاريع: زر واضح + حركة أقوى */
+.project-card {
+  min-height: 315px !important;
+  align-items: stretch !important;
+}
+
+.project-content {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.project-content h2 {
+  font-size: 27px !important;
+  margin-bottom: 14px !important;
+}
+
+.project-meta {
+  margin-top: 10px !important;
+}
+
+.project-entry-btn {
+  display: inline-flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  margin-top: 22px !important;
+  padding: 14px 24px !important;
+  font-size: 15px !important;
+  transform: translateY(0) !important;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease !important;
+}
+
+.project-card:hover .project-entry-btn {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 20px 44px rgba(4, 120, 87, 0.32) !important;
+}
+
+.project-card:hover .project-icon {
+  transform: scale(1.06) rotate(-3deg) !important;
+}
+
+.project-icon {
+  transition: transform 0.22s ease !important;
+}
+
+.project-card:hover::before {
+  background: rgba(16, 185, 129, 0.18) !important;
+}
+
+/* تأثير فتح صفحة المشروع */
+.field-shell > * {
+  animation: sectionFadeUp 0.55s ease both !important;
+}
+
+.field-shell > *:nth-child(2) { animation-delay: .05s !important; }
+.field-shell > *:nth-child(3) { animation-delay: .10s !important; }
+.field-shell > *:nth-child(4) { animation-delay: .15s !important; }
+.field-shell > *:nth-child(5) { animation-delay: .20s !important; }
+
+@keyframes sectionFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* تحسين الجوال */
+@media (max-width: 760px) {
+  .home-summary-card {
+    min-height: 120px !important;
+  }
+
+  .home-summary-card strong {
+    font-size: 38px !important;
+  }
+
+  .project-card {
+    min-height: 285px !important;
+  }
+}
