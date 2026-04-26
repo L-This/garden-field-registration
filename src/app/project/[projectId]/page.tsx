@@ -36,7 +36,7 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
     );
   }
 
-  const projectId = project.id;
+  const projectId = params.projectId;
   const readyCount = Object.values(drafts).filter((draft) => draft.status === 'ready' || draft.status === 'missing-location').length;
   const withImage = Object.values(drafts).filter((draft) => Boolean(draft.imagePreview)).length;
   const withLocation = Object.values(drafts).filter((draft) => Boolean(draft.location)).length;
