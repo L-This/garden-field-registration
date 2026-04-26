@@ -177,7 +177,7 @@ export default function ProjectPage() {
       setResult({
         ok: Boolean(response?.ok),
         message: response?.message || 'تم إرسال التقرير.',
-        details: response?.details || [],
+        details: [],
       });
     } catch {
       setResult({
