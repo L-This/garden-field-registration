@@ -41,9 +41,6 @@ type FieldSubmitResult = {
   message: string;
   details?: unknown[];
 };
-  status: DraftStatus;
-  note?: string;
-};
 
 const todayLabel = new Intl.DateTimeFormat('ar-SA', {
   weekday: 'long',
@@ -91,13 +88,13 @@ export default function ProjectPage() {
     if (!garden) return;
 
     setDrafts((current) => {
-      const previous = current[gardenId] || {
+      const previous: GardenDraft = current[gardenId] || {
         gardenId,
         gardenName: garden.name,
-        status: 'empty' as DraftStatus,
+        status: 'empty',
       };
 
-      const next = { ...previous, ...patch };
+      const next: GardenDraft = { ...previous, ...patch };
       if (next.imagePreview && next.location) next.status = 'ready';
       else if (next.imagePreview && !next.location) next.status = 'missing-location';
       else next.status = 'empty';
@@ -154,7 +151,7 @@ export default function ProjectPage() {
 
   const filteredGardens = gardens.filter((garden) => {
     const draft = drafts[garden.id];
-    const matchesQuery = garden.name.includes(query) || garden.zone?.includes(query);
+    const matchesQuery = garden.name.includes(query) || Boolean(garden.zone?.includes(query));
 
     if (!matchesQuery) return false;
     if (filter === 'ready') return draft?.status === 'ready';
@@ -174,9 +171,14 @@ export default function ProjectPage() {
         projectId,
         managerName,
         submittedAt: new Date().toISOString(),
-        records: readyDrafts,
+        records: readyDrafts as any,
       });
-      setResult(response);
+
+      setResult({
+        ok: Boolean(response?.ok),
+        message: response?.message || 'تم إرسال التقرير.',
+        details: response?.details || [],
+      });
     } catch {
       setResult({
         ok: false,
