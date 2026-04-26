@@ -7,6 +7,7 @@ export function ProjectCard({ project, gardens }: { project: Project; gardens: G
   return (
     <Link className="project-card" href={`/project/${project.id}`}>
       <div className="project-icon"><Sprout size={26} /></div>
+
       <div className="project-content">
         <h2>{project.name}</h2>
         <p><MapPinned size={16} /> {project.district}</p>
@@ -14,7 +15,12 @@ export function ProjectCard({ project, gardens }: { project: Project; gardens: G
           <span>{gardens.length} حديقة</span>
           <span>تسجيل يومي</span>
         </div>
+        <div className="project-entry-btn">
+          دخول المشروع
+          <ArrowLeft size={17} />
+        </div>
       </div>
+
       <div className="project-arrow"><ArrowLeft size={22} /></div>
     </Link>
   );
