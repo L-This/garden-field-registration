@@ -36,6 +36,7 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
     );
   }
 
+  const projectId = project.id;
   const readyCount = Object.values(drafts).filter((draft) => draft.status === 'ready' || draft.status === 'missing-location').length;
   const withImage = Object.values(drafts).filter((draft) => Boolean(draft.imagePreview)).length;
   const withLocation = Object.values(drafts).filter((draft) => Boolean(draft.location)).length;
@@ -58,7 +59,7 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
     const records = Object.values(drafts).filter((draft) => draft.status === 'ready' || draft.status === 'missing-location');
     setLoading(true);
     const response = await submitIrrigationReport({
-      projectId: project.id,
+      projectId,
       managerName,
       submittedAt: new Date().toISOString(),
       records,
@@ -77,7 +78,7 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
   }
 
   function handleClear() {
-    clearDraft(project.id);
+    clearDraft(projectId);
     setDrafts({});
   }
 
