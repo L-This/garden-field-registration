@@ -1345,3 +1345,44 @@ button {
     width: 100% !important;
   }
 }
+@media (max-width: 760px) {
+  .submit-dock {
+    left: 8px !important;
+    right: 8px !important;
+    bottom: 10px !important;
+    transform: none !important;
+    width: auto !important;
+    max-width: none !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 14px !important;
+    border-radius: 24px !important;
+  }
+
+  .submit-dock div {
+    text-align: center !important;
+  }
+
+  .submit-dock strong {
+    font-size: 16px !important;
+  }
+
+  .submit-dock span {
+    font-size: 13px !important;
+    line-height: 1.6 !important;
+  }
+
+  .submit-dock button {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 50px !important;
+  }
+
+  .result-toast {
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    bottom: 126px !important;
+  }
+}
