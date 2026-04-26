@@ -21,7 +21,7 @@ import { getProject } from '@/data/projects';
 import { getGardensByProject } from '@/data/gardens';
 import { submitIrrigationReport, SubmitResult } from '@/lib/api';
 
-type DraftStatus = 'empty' | 'ready' | 'missing-location' | 'sent' | 'error';
+type DraftStatus = 'empty' | 'ready' | 'missing-location' | 'sent' | 'duplicate' | 'failed';
 
 type GardenDraft = {
   gardenId: string;
@@ -105,7 +105,7 @@ export default function ProjectPage() {
 
   const handleLocation = (gardenId: string) => {
     if (!navigator.geolocation) {
-      updateDraft(gardenId, { status: 'error', note: 'المتصفح لا يدعم تحديد الموقع' });
+      updateDraft(gardenId, { status: 'failed', note: 'المتصفح لا يدعم تحديد الموقع' });
       return;
     }
 
@@ -123,7 +123,7 @@ export default function ProjectPage() {
         });
       },
       () => {
-        updateDraft(gardenId, { status: 'error', note: 'تعذر جلب الموقع، تأكد من السماح للمتصفح' });
+        updateDraft(gardenId, { status: 'failed', note: 'تعذر جلب الموقع، تأكد من السماح للمتصفح' });
       },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
     );
@@ -264,7 +264,7 @@ export default function ProjectPage() {
                 {status === 'ready' && <span className="status success"><CheckCircle2 size={15} /> جاهزة للإرسال</span>}
                 {status === 'missing-location' && <span className="status warning"><MapPin size={15} /> الصورة جاهزة والموقع ناقص</span>}
                 {status === 'empty' && <span className="status muted"><XCircle size={15} /> لم يتم التجهيز</span>}
-                {status === 'error' && <span className="status danger"><XCircle size={15} /> يحتاج مراجعة</span>}
+                {status === 'failed' && <span className="status danger"><XCircle size={15} /> يحتاج مراجعة</span>}
               </div>
 
               {draft?.note && <p className="garden-note">{draft.note}</p>}
