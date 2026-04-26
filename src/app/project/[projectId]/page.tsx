@@ -172,11 +172,8 @@ export default function ProjectPage() {
       setResult({
         ok: false,
         message: 'تعذر إرسال التقرير. تحقق من الربط الخلفي ثم أعد المحاولة.',
-        inserted: 0,
-        duplicates: 0,
-        failed: readyDrafts.length,
         details: [],
-      });
+      } as SubmitResult);
     } finally {
       setLoading(false);
     }
@@ -306,7 +303,7 @@ export default function ProjectPage() {
         <section className={`result-toast ${result.ok ? 'success' : 'danger'}`}>
           <strong>{result.ok ? 'تمت العملية' : 'تعذر الإرسال'}</strong>
           <p>{result.message}</p>
-          <small>تم: {result.inserted} | مكرر: {result.duplicates} | فشل: {result.failed}</small>
+          <small>{result.ok ? 'تم استقبال نتيجة الإرسال.' : 'لم يتم حفظ التقرير.'}</small>
         </section>
       )}
     </main>
