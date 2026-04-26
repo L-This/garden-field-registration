@@ -1244,3 +1244,104 @@ button {
     min-height: 285px !important;
   }
 }
+/* ===============================
+   FINAL MOBILE FIX - HOME PAGE
+================================= */
+@media (max-width: 760px) {
+
+  .home-page,
+  .project-page {
+    width: calc(100% - 16px) !important;
+    padding: 10px 0 120px !important;
+  }
+
+  .home-hero,
+  .legendary-hero,
+  .field-hero {
+    padding: 22px 16px !important;
+    border-radius: 26px !important;
+    margin-bottom: 18px !important;
+  }
+
+  .home-hero h1,
+  .legendary-hero h1,
+  .field-hero h1 {
+    font-size: 28px !important;
+    line-height: 1.5 !important;
+  }
+
+  .home-hero p,
+  .legendary-hero p,
+  .field-hero p {
+    font-size: 15px !important;
+    line-height: 1.8 !important;
+  }
+
+  .home-summary-grid,
+  .stats-grid,
+  .projects-grid,
+  .project-grid,
+  .gardens-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .home-summary-card,
+  .stat-card {
+    min-height: 110px !important;
+    padding: 20px !important;
+    border-radius: 24px !important;
+  }
+
+  .home-summary-card strong,
+  .stat-card strong {
+    font-size: 34px !important;
+  }
+
+  .project-card {
+    min-height: auto !important;
+    padding: 22px !important;
+    border-radius: 28px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+  }
+
+  .project-content h2 {
+    font-size: 22px !important;
+    line-height: 1.5 !important;
+  }
+
+  .project-content p {
+    font-size: 15px !important;
+  }
+
+  .project-icon,
+  .project-arrow {
+    width: 52px !important;
+    height: 52px !important;
+  }
+
+  .project-entry-btn {
+    width: 100% !important;
+    justify-content: center !important;
+    margin-top: 10px !important;
+  }
+
+  .toolbar-card {
+    grid-template-columns: 1fr !important;
+    position: static !important;
+  }
+
+  .submit-dock {
+    width: calc(100% - 16px) !important;
+    bottom: 10px !important;
+    padding: 14px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .submit-dock button {
+    width: 100% !important;
+  }
+}
