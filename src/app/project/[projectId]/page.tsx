@@ -365,7 +365,7 @@ export default function ProjectPage() {
                 <label className="action-btn upload">
                   <Camera size={17} />
                   {draft?.imagePreview ? 'تغيير الصورة' : 'رفع صورة'}
-                  <input type="file" accept="image/*" capture="environment" onChange={(e) => handleImage(garden.id, e.target.files?.[0])} />
+                  <input type="file" accept="image/*" onChange={(e) => handleImage(garden.id, e.target.files?.[0])} />
                 </label>
 
                 <button className="action-btn location" onClick={() => handleLocation(garden.id)}>
