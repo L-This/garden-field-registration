@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.48.0"
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
