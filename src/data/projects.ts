@@ -8,30 +8,30 @@ export type Project = {
 
 export const projects: Project[] = [
   {
-    id: 'briman-taybah',
+    id: 'briman',
     name: 'مشروع بريمان وطيبة',
     district: 'نطاق شمال شرق جدة',
     contractorLabel: 'مدير المشروع',
     accent: 'emerald',
   },
   {
-    id: 'east-jeddah',
-    name: 'مشروع شرق جدة',
+    id: 'omalsalam',
+    name: 'مشروع ام السلم ابرق الرغامة',
     district: 'الأحياء الشرقية',
     contractorLabel: 'مدير المشروع',
     accent: 'teal',
   },
   {
-    id: 'south-jeddah',
-    name: 'مشروع جنوب جدة',
+    id: 'private',
+    name: 'مشروع المخططات الخاصة',
     district: 'الأحياء الجنوبية',
     contractorLabel: 'مدير المشروع',
     accent: 'blue',
   },
   {
-    id: 'central-jeddah',
-    name: 'مشروع وسط جدة',
-    district: 'النطاق المركزي',
+    id: 'jangel',
+    name: 'مشروع الغابة الشرقية',
+    district: 'الغابة الشرقية',
     contractorLabel: 'مدير المشروع',
     accent: 'green',
   },
