@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { getProject } from '@/data/projects';
 import { getGardensByProject } from '@/data/gardens';
-import { submitIrrigationReport, SubmitResult } from '@/lib/api';
+import { submitIrrigationReport } from '@/lib/api';
 
 type DraftStatus = 'empty' | 'ready' | 'missing-location' | 'sent' | 'duplicate' | 'failed';
 
@@ -32,6 +32,15 @@ type GardenDraft = {
     lng: number;
     accuracy?: number;
   };
+  status: DraftStatus;
+  note?: string;
+};
+
+type FieldSubmitResult = {
+  ok: boolean;
+  message: string;
+  details?: unknown[];
+};
   status: DraftStatus;
   note?: string;
 };
@@ -63,7 +72,7 @@ export default function ProjectPage() {
   const [filter, setFilter] = useState<'all' | 'ready' | 'missing' | 'empty'>('all');
   const [managerName, setManagerName] = useState('مدير المشروع');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<SubmitResult | null>(null);
+  const [result, setResult] = useState<FieldSubmitResult | null>(null);
 
   if (!project) {
     return (
@@ -173,7 +182,7 @@ export default function ProjectPage() {
         ok: false,
         message: 'تعذر إرسال التقرير. تحقق من الربط الخلفي ثم أعد المحاولة.',
         details: [],
-      } as SubmitResult);
+      });
     } finally {
       setLoading(false);
     }
