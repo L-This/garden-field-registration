@@ -11,10 +11,12 @@ import {
   Image as ImageIcon,
   Loader2,
   LocateFixed,
+  LockKeyhole,
   MapPin,
   Search,
   ShieldCheck,
   Sprout,
+  Trash2,
   XCircle,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -26,6 +28,7 @@ type GardenDraft = {
   gardenId: string;
   gardenName: string;
   imagePreview?: string;
+  imagePreviews?: string[];
   location?: {
     lat: number;
     lng: number;
@@ -45,9 +48,11 @@ type FieldSubmitResult = {
 
 type UiProject = {
   id: string;
+  dbId: string;
   name: string;
   district: string;
   contractorLabel: string;
+  contractorCode: string;
   accent: string;
 };
 
@@ -80,7 +85,12 @@ export default function ProjectPage() {
   const [project, setProject] = useState<UiProject | null>(null);
   const [gardens, setGardens] = useState<UiGarden[]>([]);
   const [loadingPage, setLoadingPage] = useState(true);
+  const [loadingGardens, setLoadingGardens] = useState(false);
   const [pageError, setPageError] = useState('');
+
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [accessCode, setAccessCode] = useState('');
+  const [accessError, setAccessError] = useState('');
 
   const [drafts, setDrafts] = useState<Record<string, GardenDraft>>({});
   const [query, setQuery] = useState('');
@@ -97,51 +107,89 @@ export default function ProjectPage() {
       setGardens([]);
       setDrafts({});
       setResult(null);
+      setIsUnlocked(false);
+      setAccessCode('');
+      setAccessError('');
 
       const { data: projectRow, error: projectError } = await supabase
         .from('projects')
-        .select('id, slug, name, district, contractor_label, accent')
+        .select('id, slug, name, district, contractor_label, contractor_code, accent')
         .eq('slug', projectId)
         .single();
 
       if (projectError || !projectRow) {
-        setPageError('المشروع غير موجود في قاعدة البيانات.');
+        setPageError('المشروع غير موجود في قاعدة البيانات. إذا ظهر خطأ contractor_code أضف العمود من Supabase.');
         setLoadingPage(false);
         return;
       }
 
-      const { data: gardenRows, error: gardensError } = await supabase
-        .from('gardens')
-        .select('id, name')
-        .eq('project_id', projectRow.id)
-        .eq('active', true)
-        .order('created_at', { ascending: true });
-
-      if (gardensError) {
-        setPageError('تعذر تحميل حدائق المشروع.');
-        setLoadingPage(false);
-        return;
-      }
-
-      setProject({
+      const loadedProject: UiProject = {
         id: projectRow.slug,
+        dbId: projectRow.id,
         name: projectRow.name,
         district: projectRow.district || 'بدون نطاق',
         contractorLabel: projectRow.contractor_label || 'مدير المشروع',
+        contractorCode: projectRow.contractor_code || '123456',
         accent: projectRow.accent || 'emerald',
-      });
+      };
 
-      setGardens((gardenRows || []).map((garden) => ({
-        id: garden.id,
-        name: garden.name,
-      })));
+      setProject(loadedProject);
+      setManagerName(loadedProject.contractorLabel);
 
-      setManagerName(projectRow.contractor_label || 'مدير المشروع');
+      const savedAccess = sessionStorage.getItem(`field-access-${projectId}`);
+      if (savedAccess === loadedProject.contractorCode) {
+        setIsUnlocked(true);
+        await loadGardens(loadedProject.dbId);
+      }
+
       setLoadingPage(false);
     }
 
     if (projectId) loadProject();
   }, [projectId]);
+
+  async function loadGardens(projectDbId: string) {
+    setLoadingGardens(true);
+
+    const { data: gardenRows, error: gardensError } = await supabase
+      .from('gardens')
+      .select('id, name')
+      .eq('project_id', projectDbId)
+      .eq('active', true)
+      .order('created_at', { ascending: true });
+
+    if (gardensError) {
+      setPageError('تعذر تحميل حدائق المشروع.');
+      setLoadingGardens(false);
+      return;
+    }
+
+    setGardens((gardenRows || []).map((garden) => ({
+      id: garden.id,
+      name: garden.name,
+    })));
+
+    setLoadingGardens(false);
+  }
+
+  async function unlockProject() {
+    if (!project) return;
+
+    if (!accessCode.trim()) {
+      setAccessError('أدخل رمز مرور المشروع');
+      return;
+    }
+
+    if (accessCode.trim() !== project.contractorCode) {
+      setAccessError('رمز المرور غير صحيح');
+      return;
+    }
+
+    sessionStorage.setItem(`field-access-${projectId}`, project.contractorCode);
+    setIsUnlocked(true);
+    setAccessError('');
+    await loadGardens(project.dbId);
+  }
 
   const updateDraft = (gardenId: string, patch: Partial<GardenDraft>) => {
     const garden = gardens.find((item) => item.id === gardenId);
@@ -151,22 +199,48 @@ export default function ProjectPage() {
       const previous: GardenDraft = current[gardenId] || {
         gardenId,
         gardenName: garden.name,
+        imagePreviews: [],
         status: 'empty',
       };
 
       const next: GardenDraft = { ...previous, ...patch };
-      if (next.imagePreview && next.location) next.status = 'ready';
-      else if (next.imagePreview && !next.location) next.status = 'missing-location';
+      const images = next.imagePreviews || (next.imagePreview ? [next.imagePreview] : []);
+
+      next.imagePreviews = images;
+      next.imagePreview = images[0];
+
+      if (images.length && next.location) next.status = 'ready';
+      else if (images.length && !next.location) next.status = 'missing-location';
       else next.status = 'empty';
 
       return { ...current, [gardenId]: next };
     });
   };
 
-  const handleImage = async (gardenId: string, file?: File) => {
-    if (!file) return;
-    const imagePreview = await fileToBase64(file);
-    updateDraft(gardenId, { imagePreview, note: 'تم تجهيز الصورة' });
+  const handleImages = async (gardenId: string, fileList?: FileList | null) => {
+    if (!fileList?.length) return;
+
+    const files = Array.from(fileList);
+    const previews = await Promise.all(files.map((file) => fileToBase64(file)));
+    const previousImages = drafts[gardenId]?.imagePreviews || [];
+    const nextImages = [...previousImages, ...previews];
+
+    updateDraft(gardenId, {
+      imagePreviews: nextImages,
+      imagePreview: nextImages[0],
+      note: `تم تجهيز ${nextImages.length} صورة`,
+    });
+  };
+
+  const removeImage = (gardenId: string, imageIndex: number) => {
+    const previousImages = drafts[gardenId]?.imagePreviews || [];
+    const nextImages = previousImages.filter((_, index) => index !== imageIndex);
+
+    updateDraft(gardenId, {
+      imagePreviews: nextImages,
+      imagePreview: nextImages[0],
+      note: nextImages.length ? `تم تجهيز ${nextImages.length} صورة` : 'تم إزالة الصور',
+    });
   };
 
   const handleLocation = (gardenId: string) => {
@@ -204,7 +278,7 @@ export default function ProjectPage() {
   };
 
   const readyDrafts = Object.values(drafts).filter((draft) => draft.status === 'ready' || draft.status === 'missing-location');
-  const withImage = Object.values(drafts).filter((draft) => Boolean(draft.imagePreview)).length;
+  const withImage = Object.values(drafts).reduce((sum, draft) => sum + (draft.imagePreviews?.length || 0), 0);
   const withLocation = Object.values(drafts).filter((draft) => Boolean(draft.location)).length;
   const readyCount = readyDrafts.length;
   const progress = gardens.length ? Math.round((readyCount / gardens.length) * 100) : 0;
@@ -233,7 +307,11 @@ export default function ProjectPage() {
         projectId,
         managerName,
         submittedAt: new Date().toISOString(),
-        records: readyDrafts,
+        records: readyDrafts.map((draft) => ({
+          ...draft,
+          imagePreview: draft.imagePreviews?.[0] || draft.imagePreview,
+          imagePreviews: draft.imagePreviews || [],
+        })) as GardenDraft[],
       });
 
       setResult(response);
@@ -256,7 +334,7 @@ export default function ProjectPage() {
         <section className="project-empty-state">
           <Loader2 className="spin" size={34} />
           <h1>جاري تحميل المشروع</h1>
-          <p>يتم الآن جلب الحدائق من Supabase.</p>
+          <p>يتم الآن جلب بيانات المشروع من Supabase.</p>
         </section>
       </main>
     );
@@ -268,6 +346,38 @@ export default function ProjectPage() {
         <section className="project-empty-state">
           <h1>المشروع غير موجود</h1>
           <p>{pageError || 'تأكد من رابط المشروع أو ارجع للصفحة الرئيسية.'}</p>
+          <Link href="/" className="primary-link">العودة للرئيسية</Link>
+        </section>
+      </main>
+    );
+  }
+
+  if (!isUnlocked) {
+    return (
+      <main className="project-page field-shell" dir="rtl">
+        <section className="project-lock-card">
+          <div className="lock-icon"><LockKeyhole size={38} /></div>
+          <h1>{project.name}</h1>
+          <p>{project.district}</p>
+          <strong>أدخل رمز مرور المشروع للمتابعة</strong>
+
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              unlockProject();
+            }}
+          >
+            <input
+              type="password"
+              value={accessCode}
+              onChange={(event) => setAccessCode(event.target.value)}
+              placeholder="رمز مرور المشروع"
+              autoFocus
+            />
+            <button type="submit">دخول المشروع</button>
+          </form>
+
+          {accessError && <span className="lock-error">{accessError}</span>}
           <Link href="/" className="primary-link">العودة للرئيسية</Link>
         </section>
       </main>
@@ -286,32 +396,33 @@ export default function ProjectPage() {
           <p>{project.district}</p>
         </div>
         <div className="hero-date">
-          <span>تاريخ التسجيل</span>
-          <strong>{todayLabel}</strong>
+          <span>اسم المسؤول</span>
+          <strong>{managerName}</strong>
+          <small>{todayLabel}</small>
         </div>
       </section>
 
       <section className="stats-grid">
         <div className="stat-card"><span>إجمالي الحدائق</span><strong>{gardens.length}</strong></div>
         <div className="stat-card"><span>جاهزة للإرسال</span><strong>{readyCount}</strong></div>
-        <div className="stat-card"><span>صور مرفوعة</span><strong>{withImage}</strong></div>
+        <div className="stat-card"><span>إجمالي الصور</span><strong>{withImage}</strong></div>
         <div className="stat-card"><span>مواقع محفوظة</span><strong>{withLocation}</strong></div>
       </section>
 
       <section className="progress-panel">
         <div>
           <h2>نسبة التجهيز اليومي</h2>
-          <p>جهّز الصور والمواقع ثم أرسل التقرير دفعة واحدة.</p>
+          <p>اسم المسؤول مرتبط بالمشروع تلقائيًا. جهّز الصور والمواقع ثم أرسل التقرير دفعة واحدة.</p>
         </div>
         <strong>{progress}%</strong>
         <div className="progress-track"><span style={{ width: `${progress}%` }} /></div>
       </section>
 
-      <section className="toolbar-card">
-        <label className="manager-field">
+      <section className="toolbar-card contractor-toolbar-card">
+        <div className="manager-static-field">
           <span>اسم المسؤول</span>
-          <input value={managerName} onChange={(e) => setManagerName(e.target.value)} />
-        </label>
+          <strong>{managerName}</strong>
+        </div>
 
         <div className="search-field">
           <Search size={18} />
@@ -326,67 +437,86 @@ export default function ProjectPage() {
         </div>
       </section>
 
-      <section className="gardens-grid">
-        {filteredGardens.map((garden) => {
-          const draft = drafts[garden.id];
-          const status = draft?.status || 'empty';
-          const mapsUrl = draft?.location
-            ? `https://www.google.com/maps?q=${draft.location.lat},${draft.location.lng}`
-            : '';
+      {loadingGardens ? (
+        <section className="project-empty-state">
+          <Loader2 className="spin" size={30} />
+          <h2>جاري تحميل الحدائق</h2>
+        </section>
+      ) : (
+        <section className="gardens-list-rows">
+          {filteredGardens.map((garden) => {
+            const draft = drafts[garden.id];
+            const status = draft?.status || 'empty';
+            const images = draft?.imagePreviews || [];
+            const mapsUrl = draft?.location
+              ? `https://www.google.com/maps?q=${draft.location.lat},${draft.location.lng}`
+              : '';
 
-          return (
-            <article key={garden.id} className={`garden-card-pro ${status}`}>
-              <div className="garden-card-head">
-                <div className="garden-icon"><Sprout size={22} /></div>
-                <div>
-                  <h3>{garden.name}</h3>
-                  <p>{garden.zone || project.district}</p>
+            return (
+              <article key={garden.id} className={`garden-row-card ${status}`}>
+                <div className="garden-row-main">
+                  <div className="garden-row-title">
+                    <div className="garden-icon"><Sprout size={22} /></div>
+                    <div>
+                      <h3>{garden.name}</h3>
+                      <p>{garden.zone || project.district}</p>
+                    </div>
+                  </div>
+
+                  <div className="garden-row-status">
+                    {status === 'ready' && <span className="status success"><CheckCircle2 size={15} /> جاهزة للإرسال</span>}
+                    {status === 'missing-location' && <span className="status warning"><MapPin size={15} /> الصور جاهزة والموقع ناقص</span>}
+                    {status === 'empty' && <span className="status muted"><XCircle size={15} /> لم يتم التجهيز</span>}
+                    {status === 'failed' && <span className="status danger"><XCircle size={15} /> يحتاج مراجعة</span>}
+                    {draft?.note && <small>{draft.note}</small>}
+                  </div>
                 </div>
-              </div>
 
-              <div className="proof-preview">
-                {draft?.imagePreview ? (
-                  <img src={draft.imagePreview} alt={`إثبات ${garden.name}`} />
-                ) : (
-                  <div className="empty-preview"><ImageIcon size={32} /><span>لا توجد صورة</span></div>
-                )}
-              </div>
+                <div className="multi-photo-strip">
+                  {images.length ? (
+                    images.map((src, index) => (
+                      <div className="multi-photo-item" key={`${garden.id}-${index}`}>
+                        <img src={src} alt={`${garden.name} ${index + 1}`} />
+                        <button onClick={() => removeImage(garden.id, index)} title="حذف الصورة">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="empty-photo-row"><ImageIcon size={28} /><span>لا توجد صور</span></div>
+                  )}
+                </div>
 
-              <div className="status-row">
-                {status === 'ready' && <span className="status success"><CheckCircle2 size={15} /> جاهزة للإرسال</span>}
-                {status === 'missing-location' && <span className="status warning"><MapPin size={15} /> الصورة جاهزة والموقع ناقص</span>}
-                {status === 'empty' && <span className="status muted"><XCircle size={15} /> لم يتم التجهيز</span>}
-                {status === 'failed' && <span className="status danger"><XCircle size={15} /> يحتاج مراجعة</span>}
-              </div>
+                <div className="garden-row-actions">
+                  <label className="action-btn upload">
+                    <Camera size={17} />
+                    رفع صور
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => handleImages(garden.id, e.target.files)}
+                    />
+                  </label>
 
-              {draft?.note && <p className="garden-note">{draft.note}</p>}
+                  <button className="action-btn location" onClick={() => handleLocation(garden.id)}>
+                    <LocateFixed size={17} />
+                    {draft?.location ? 'تحديث الموقع' : 'جلب الموقع'}
+                  </button>
 
-              <div className="garden-actions">
-                <label className="action-btn upload">
-                  <Camera size={17} />
-                  {draft?.imagePreview ? 'تغيير الصورة' : 'رفع صورة'}
-                  <input type="file" accept="image/*" onChange={(e) => handleImage(garden.id, e.target.files?.[0])} />
-                </label>
-
-                <button className="action-btn location" onClick={() => handleLocation(garden.id)}>
-                  <LocateFixed size={17} />
-                  {draft?.location ? 'تحديث الموقع' : 'جلب الموقع'}
-                </button>
-              </div>
-
-              <div className="garden-footer">
-                {mapsUrl ? <a href={mapsUrl} target="_blank" rel="noreferrer">فتح الموقع</a> : <span>الموقع غير محفوظ</span>}
-                {draft && <button onClick={() => clearGarden(garden.id)}>مسح</button>}
-              </div>
-            </article>
-          );
-        })}
-      </section>
+                  {mapsUrl ? <a href={mapsUrl} target="_blank" rel="noreferrer" className="row-map-link">فتح الموقع</a> : <span className="row-map-muted">الموقع غير محفوظ</span>}
+                  {draft && <button className="row-clear-btn" onClick={() => clearGarden(garden.id)}>مسح</button>}
+                </div>
+              </article>
+            );
+          })}
+        </section>
+      )}
 
       <section className="submit-dock">
         <div>
           <strong>{readyCount} حديقة جاهزة</strong>
-          <span>سيتم إرسال الحدائق التي تحتوي على صورة، ويفضل إضافة الموقع لكل حديقة.</span>
+          <span>سيتم إرسال الحدائق التي تحتوي على صور، ويفضل إضافة الموقع لكل حديقة.</span>
         </div>
         <button onClick={submitReport} disabled={loading || !readyCount}>
           {loading ? <Loader2 className="spin" size={18} /> : <CloudUpload size={18} />}
