@@ -113,7 +113,7 @@ export default function ProjectPage() {
 
       const { data: projectRow, error: projectError } = await supabase
         .from('projects')
-        .select('id, slug, name, district, contractor_label, contractor_code, accent')
+        .select('id, slug, name, district, contractor_label, manager_name, contractor_code, accent')
         .eq('slug', projectId)
         .single();
 
@@ -128,7 +128,7 @@ export default function ProjectPage() {
         dbId: projectRow.id,
         name: projectRow.name,
         district: projectRow.district || 'بدون نطاق',
-        contractorLabel: projectRow.contractor_label || 'مدير المشروع',
+        contractorLabel: projectRow.manager_name || projectRow.contractor_label || 'مدير المشروع',
         contractorCode: projectRow.contractor_code || '123456',
         accent: projectRow.accent || 'emerald',
       };
