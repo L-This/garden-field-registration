@@ -10,6 +10,7 @@ type ReportRecord = {
   gardenId: string;
   gardenName: string;
   imagePreview?: string;
+  imagePreviews?: string[];
   location?: LocationPoint;
   status?: string;
   note?: string;
@@ -28,6 +29,13 @@ type SubmitPayload = {
   managerName: string;
   submittedAt: string;
   records: ReportRecord[];
+};
+
+type BasicReview = {
+  status: 'passed' | 'needs_review' | 'rejected' | 'pending';
+  score: number;
+  reason: string;
+  flags: string[];
 };
 
 function todayDate() {
@@ -54,8 +62,67 @@ function getFileExtension(dataUrl: string) {
   return 'jpg';
 }
 
+function uniqueImages(images: string[]) {
+  return Array.from(new Set(images.filter(Boolean)));
+}
+
+function buildBasicReview(record: ReportRecord, images: string[]): BasicReview {
+  const flags: string[] = [];
+  let score = 100;
+
+  if (!images.length) {
+    flags.push('لا توجد صورة مرفوعة');
+    score -= 45;
+  }
+
+  if (!record.location?.lat || !record.location?.lng) {
+    flags.push('الموقع غير محفوظ');
+    score -= 30;
+  }
+
+  if (typeof record.location?.accuracy === 'number' && record.location.accuracy > 100) {
+    flags.push(`دقة الموقع ضعيفة: ${Math.round(record.location.accuracy)} متر`);
+    score -= 20;
+  }
+
+  if (images.length > 1 && uniqueImages(images).length < images.length) {
+    flags.push('توجد صورة مكررة ضمن نفس الحديقة قبل الإرسال');
+    score -= 20;
+  }
+
+  score = Math.max(0, Math.min(100, score));
+
+  if (score >= 80) {
+    return {
+      status: 'passed',
+      score,
+      reason: 'الفحص الأساسي مكتمل: الصورة والموقع متوفران ولا توجد ملاحظات قوية.',
+      flags,
+    };
+  }
+
+  if (score >= 45) {
+    return {
+      status: 'needs_review',
+      score,
+      reason: flags.join('، ') || 'السجل يحتاج مراجعة.',
+      flags,
+    };
+  }
+
+  return {
+    status: 'rejected',
+    score,
+    reason: flags.join('، ') || 'اشتباه قوي في اكتمال السجل.',
+    flags,
+  };
+}
+
 export async function submitIrrigationReport(payload: SubmitPayload): Promise<SubmitResult> {
-  const recordsWithImage = payload.records.filter((record) => Boolean(record.imagePreview));
+  const recordsWithImage = payload.records.filter((record) => {
+    const images = record.imagePreviews?.length ? record.imagePreviews : record.imagePreview ? [record.imagePreview] : [];
+    return images.length > 0;
+  });
 
   if (!recordsWithImage.length) {
     return {
@@ -86,20 +153,30 @@ export async function submitIrrigationReport(payload: SubmitPayload): Promise<Su
   let sent = 0;
   let duplicates = 0;
   let failed = 0;
+  let needsReview = 0;
+  let rejected = 0;
   const reportDate = todayDate();
 
   for (const record of recordsWithImage) {
+    const images = record.imagePreviews?.length ? record.imagePreviews : record.imagePreview ? [record.imagePreview] : [];
+    const review = buildBasicReview(record, images);
+
     const { data: report, error: reportError } = await supabase
       .from('reports')
       .insert({
         project_id: project.id,
         garden_id: record.gardenId,
         worker_name: payload.managerName || 'مدير المشروع',
-        status: 'sent',
+        status: 'watered',
         latitude: record.location?.lat ?? null,
         longitude: record.location?.lng ?? null,
+        location_accuracy: record.location?.accuracy ?? null,
         notes: record.note ?? null,
         report_date: reportDate,
+        ai_review_status: review.status,
+        ai_review_score: review.score,
+        ai_review_reason: review.reason,
+        ai_flags: review.flags,
       })
       .select('id')
       .single();
@@ -114,36 +191,45 @@ export async function submitIrrigationReport(payload: SubmitPayload): Promise<Su
     }
 
     try {
-      const extension = getFileExtension(record.imagePreview || '');
-      const blob = base64ToBlob(record.imagePreview || '');
-      const filePath = `${project.slug}/${reportDate}/${record.gardenId}-${Date.now()}.${extension}`;
+      const photoRows: { report_id: string; file_url: string }[] = [];
 
-      const { error: uploadError } = await supabase.storage
-        .from('watering-proofs')
-        .upload(filePath, blob, {
-          contentType: blob.type,
-          upsert: false,
+      for (let index = 0; index < images.length; index += 1) {
+        const imageData = images[index];
+        const extension = getFileExtension(imageData);
+        const blob = base64ToBlob(imageData);
+        const filePath = `${project.slug}/${reportDate}/${record.gardenId}-${Date.now()}-${index}.${extension}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('watering-proofs')
+          .upload(filePath, blob, {
+            contentType: blob.type,
+            upsert: false,
+          });
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        const { data: publicUrl } = supabase.storage
+          .from('watering-proofs')
+          .getPublicUrl(filePath);
+
+        photoRows.push({
+          report_id: report.id,
+          file_url: publicUrl.publicUrl,
         });
-
-      if (uploadError) {
-        failed += 1;
-        continue;
       }
 
-      const { data: publicUrl } = supabase.storage
-        .from('watering-proofs')
-        .getPublicUrl(filePath);
+      if (photoRows.length) {
+        const { error: photoError } = await supabase.from('photos').insert(photoRows);
 
-      const { error: photoError } = await supabase.from('photos').insert({
-        report_id: report.id,
-        file_url: publicUrl.publicUrl,
-      });
-
-      if (photoError) {
-        failed += 1;
-        continue;
+        if (photoError) {
+          throw photoError;
+        }
       }
 
+      if (review.status === 'needs_review') needsReview += 1;
+      if (review.status === 'rejected') rejected += 1;
       sent += 1;
     } catch {
       failed += 1;
@@ -152,7 +238,7 @@ export async function submitIrrigationReport(payload: SubmitPayload): Promise<Su
 
   return {
     ok: sent > 0,
-    message: `تم إرسال ${sent} حديقة بنجاح، ${duplicates} مكررة، ${failed} فشلت.`,
+    message: `تم إرسال ${sent} حديقة بنجاح. تنبيهات التحقق الذكي: ${needsReview} تحتاج مراجعة، ${rejected} اشتباه قوي. المكرر: ${duplicates}، الفشل: ${failed}.`,
     sent,
     duplicates,
     failed,
