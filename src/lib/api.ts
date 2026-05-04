@@ -38,6 +38,13 @@ type BasicReview = {
   flags: string[];
 };
 
+type PreparedImage = {
+  dataUrl: string;
+  blob: Blob;
+  extension: string;
+  hash: string;
+};
+
 function todayDate() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -66,7 +73,31 @@ function uniqueImages(images: string[]) {
   return Array.from(new Set(images.filter(Boolean)));
 }
 
-function buildBasicReview(record: ReportRecord, images: string[]): BasicReview {
+async function sha256Blob(blob: Blob): Promise<string> {
+  const buffer = await blob.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function prepareImages(images: string[]): Promise<PreparedImage[]> {
+  const prepared: PreparedImage[] = [];
+
+  for (const imageData of images) {
+    const blob = base64ToBlob(imageData);
+    const extension = getFileExtension(imageData);
+    const hash = await sha256Blob(blob);
+    prepared.push({ dataUrl: imageData, blob, extension, hash });
+  }
+
+  return prepared;
+}
+
+function buildBasicReview(
+  record: ReportRecord,
+  images: string[],
+  duplicateHashCount: number
+): BasicReview {
   const flags: string[] = [];
   let score = 100;
 
@@ -80,21 +111,23 @@ function buildBasicReview(record: ReportRecord, images: string[]): BasicReview {
     score -= 35;
   }
 
-  // 🔥 تعديل مهم: لا نعاقب بشدة على دقة الموقع
   if (typeof record.location?.accuracy === 'number' && record.location.accuracy > 300) {
     flags.push(`دقة الموقع ضعيفة: ${Math.round(record.location.accuracy)} متر`);
     score -= 10;
   }
 
-  // تكرار الصور
   if (images.length > 1 && uniqueImages(images).length < images.length) {
     flags.push('توجد صورة مكررة ضمن نفس الحديقة');
     score -= 15;
   }
 
+  if (duplicateHashCount > 0) {
+    flags.push(`الصورة مكررة ومستخدمة سابقًا في سجل آخر (${duplicateHashCount})`);
+    score -= 35;
+  }
+
   score = Math.max(0, Math.min(100, score));
 
-  // 🔥 تعديل الحدود
   if (score >= 70) {
     return {
       status: 'passed',
@@ -123,7 +156,11 @@ function buildBasicReview(record: ReportRecord, images: string[]): BasicReview {
 
 export async function submitIrrigationReport(payload: SubmitPayload): Promise<SubmitResult> {
   const recordsWithImage = payload.records.filter((record) => {
-    const images = record.imagePreviews?.length ? record.imagePreviews : record.imagePreview ? [record.imagePreview] : [];
+    const images = record.imagePreviews?.length
+      ? record.imagePreviews
+      : record.imagePreview
+        ? [record.imagePreview]
+        : [];
     return images.length > 0;
   });
 
@@ -161,8 +198,34 @@ export async function submitIrrigationReport(payload: SubmitPayload): Promise<Su
   const reportDate = todayDate();
 
   for (const record of recordsWithImage) {
-    const images = record.imagePreviews?.length ? record.imagePreviews : record.imagePreview ? [record.imagePreview] : [];
-    const review = buildBasicReview(record, images);
+    const images = record.imagePreviews?.length
+      ? record.imagePreviews
+      : record.imagePreview
+        ? [record.imagePreview]
+        : [];
+
+    let preparedImages: PreparedImage[] = [];
+
+    try {
+      preparedImages = await prepareImages(images);
+    } catch {
+      failed += 1;
+      continue;
+    }
+
+    const imageHashes = preparedImages.map((image) => image.hash);
+    let duplicateHashCount = 0;
+
+    if (imageHashes.length) {
+      const { data: duplicateRows } = await supabase
+        .from('photos')
+        .select('id, image_hash')
+        .in('image_hash', imageHashes);
+
+      duplicateHashCount = duplicateRows?.length || 0;
+    }
+
+    const review = buildBasicReview(record, images, duplicateHashCount);
 
     const { data: report, error: reportError } = await supabase
       .from('reports')
@@ -194,18 +257,16 @@ export async function submitIrrigationReport(payload: SubmitPayload): Promise<Su
     }
 
     try {
-      const photoRows: { report_id: string; file_url: string }[] = [];
+      const photoRows: { report_id: string; file_url: string; image_hash: string }[] = [];
 
-      for (let index = 0; index < images.length; index += 1) {
-        const imageData = images[index];
-        const extension = getFileExtension(imageData);
-        const blob = base64ToBlob(imageData);
-        const filePath = `${project.slug}/${reportDate}/${record.gardenId}-${Date.now()}-${index}.${extension}`;
+      for (let index = 0; index < preparedImages.length; index += 1) {
+        const image = preparedImages[index];
+        const filePath = `${project.slug}/${reportDate}/${record.gardenId}-${Date.now()}-${index}.${image.extension}`;
 
         const { error: uploadError } = await supabase.storage
           .from('watering-proofs')
-          .upload(filePath, blob, {
-            contentType: blob.type,
+          .upload(filePath, image.blob, {
+            contentType: image.blob.type,
             upsert: false,
           });
 
@@ -220,6 +281,7 @@ export async function submitIrrigationReport(payload: SubmitPayload): Promise<Su
         photoRows.push({
           report_id: report.id,
           file_url: publicUrl.publicUrl,
+          image_hash: image.hash,
         });
       }
 
@@ -235,6 +297,8 @@ export async function submitIrrigationReport(payload: SubmitPayload): Promise<Su
       if (review.status === 'rejected') rejected += 1;
       sent += 1;
     } catch {
+      await supabase.from('photos').delete().eq('report_id', report.id);
+      await supabase.from('reports').delete().eq('id', report.id);
       failed += 1;
     }
   }
