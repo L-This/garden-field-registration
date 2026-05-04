@@ -72,40 +72,43 @@ function buildBasicReview(record: ReportRecord, images: string[]): BasicReview {
 
   if (!images.length) {
     flags.push('لا توجد صورة مرفوعة');
-    score -= 45;
+    score -= 60;
   }
 
   if (!record.location?.lat || !record.location?.lng) {
     flags.push('الموقع غير محفوظ');
-    score -= 30;
+    score -= 35;
   }
 
-  if (typeof record.location?.accuracy === 'number' && record.location.accuracy > 100) {
+  // 🔥 تعديل مهم: لا نعاقب بشدة على دقة الموقع
+  if (typeof record.location?.accuracy === 'number' && record.location.accuracy > 300) {
     flags.push(`دقة الموقع ضعيفة: ${Math.round(record.location.accuracy)} متر`);
-    score -= 20;
+    score -= 10;
   }
 
+  // تكرار الصور
   if (images.length > 1 && uniqueImages(images).length < images.length) {
-    flags.push('توجد صورة مكررة ضمن نفس الحديقة قبل الإرسال');
-    score -= 20;
+    flags.push('توجد صورة مكررة ضمن نفس الحديقة');
+    score -= 15;
   }
 
   score = Math.max(0, Math.min(100, score));
 
-  if (score >= 80) {
+  // 🔥 تعديل الحدود
+  if (score >= 70) {
     return {
       status: 'passed',
       score,
-      reason: 'الفحص الأساسي مكتمل: الصورة والموقع متوفران ولا توجد ملاحظات قوية.',
+      reason: flags.length ? flags.join('، ') : 'تم التحقق الأساسي بنجاح',
       flags,
     };
   }
 
-  if (score >= 45) {
+  if (score >= 40) {
     return {
       status: 'needs_review',
       score,
-      reason: flags.join('، ') || 'السجل يحتاج مراجعة.',
+      reason: flags.join('، ') || 'يحتاج مراجعة',
       flags,
     };
   }
@@ -113,7 +116,7 @@ function buildBasicReview(record: ReportRecord, images: string[]): BasicReview {
   return {
     status: 'rejected',
     score,
-    reason: flags.join('، ') || 'اشتباه قوي في اكتمال السجل.',
+    reason: flags.join('، ') || 'اشتباه قوي',
     flags,
   };
 }
