@@ -1,17 +1,10 @@
 import { supabase } from './supabase';
 
-type LocationPoint = {
-  lat: number;
-  lng: number;
-  accuracy?: number;
-};
-
 type ReportRecord = {
   gardenId: string;
   gardenName: string;
   imagePreview?: string;
   imagePreviews?: string[];
-  location?: LocationPoint;
   status?: string;
   note?: string;
 };
@@ -106,15 +99,6 @@ function buildBasicReview(
     score -= 60;
   }
 
-  if (!record.location?.lat || !record.location?.lng) {
-    flags.push('الموقع غير محفوظ');
-    score -= 35;
-  }
-
-  if (typeof record.location?.accuracy === 'number' && record.location.accuracy > 300) {
-    flags.push(`دقة الموقع ضعيفة: ${Math.round(record.location.accuracy)} متر`);
-    score -= 10;
-  }
 
   if (images.length > 1 && uniqueImages(images).length < images.length) {
     flags.push('توجد صورة مكررة ضمن نفس الحديقة');
@@ -234,9 +218,6 @@ export async function submitIrrigationReport(payload: SubmitPayload): Promise<Su
         garden_id: record.gardenId,
         worker_name: payload.managerName || 'مدير المشروع',
         status: 'watered',
-        latitude: record.location?.lat ?? null,
-        longitude: record.location?.lng ?? null,
-        location_accuracy: record.location?.accuracy ?? null,
         notes: record.note ?? null,
         report_date: reportDate,
         ai_review_status: review.status,
