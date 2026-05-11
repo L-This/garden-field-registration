@@ -202,14 +202,52 @@ export async function submitIrrigationReport(payload: SubmitPayload): Promise<Su
 
     if (imageHashes.length) {
       const { data: duplicateRows } = await supabase
-        .from('photos')
-        .select('id, image_hash')
-        .in('image_hash', imageHashes);
+  .from('photos')
+  .select(`
+    id,
+    report_id,
+    image_hash,
+    reports (
+      id,
+      report_date,
+      garden_id,
+      project_id
+    )
+  `)
+  .in('image_hash', imageHashes);
+      let duplicateType: 'none' | 'same_garden_same_day' | 'same_garden_different_day' | 'different_garden' = 'none';
 
+for (const row of duplicateRows || []) {
+  const reportData = Array.isArray(row.reports)
+    ? row.reports[0]
+    : row.reports;
+
+  if (!reportData) continue;
+
+  if (
+    reportData.garden_id === record.gardenId &&
+    reportData.report_date === reportDate
+  ) {
+    duplicateType = 'same_garden_same_day';
+  } else if (
+    reportData.garden_id === record.gardenId &&
+    reportData.report_date !== reportDate
+  ) {
+    duplicateType = 'same_garden_different_day';
+  } else {
+    duplicateType = 'different_garden';
+  }
+}
       duplicateHashCount = duplicateRows?.length || 0;
     }
-
-    const review = buildBasicReview(record, images, duplicateHashCount);
+    
+    const review = buildBasicReview(
+  record,
+  images,
+  duplicateType === 'same_garden_same_day'
+    ? 0
+    : duplicateRows?.length || 0
+);
 
     const { data: report, error: reportError } = await supabase
       .from('reports')
