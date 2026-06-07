@@ -199,55 +199,37 @@ export async function submitIrrigationReport(payload: SubmitPayload): Promise<Su
 
     const imageHashes = preparedImages.map((image) => image.hash);
     let duplicateHashCount = 0;
+    const duplicateByHash = new Map<string, any>();
 
     if (imageHashes.length) {
       const { data: duplicateRows } = await supabase
-  .from('photos')
-  .select(`
-    id,
-    report_id,
-    image_hash,
-    reports (
-      id,
-      report_date,
-      garden_id,
-      project_id
-    )
-  `)
-  .in('image_hash', imageHashes);
-      let duplicateType: 'none' | 'same_garden_same_day' | 'same_garden_different_day' | 'different_garden' = 'none';
+        .from('photos')
+        .select(`
+          id,
+          report_id,
+          image_hash,
+          created_at,
+          reports (
+            id,
+            garden_id,
+            project_id,
+            report_date
+          )
+        `)
+        .in('image_hash', imageHashes)
+        .order('created_at', { ascending: true });
 
-for (const row of duplicateRows || []) {
-  const reportData = Array.isArray(row.reports)
-    ? row.reports[0]
-    : row.reports;
+      const rows = (duplicateRows || []) as any[];
+      duplicateHashCount = rows.length;
 
-  if (!reportData) continue;
-
-  if (
-    reportData.garden_id === record.gardenId &&
-    reportData.report_date === reportDate
-  ) {
-    duplicateType = 'same_garden_same_day';
-  } else if (
-    reportData.garden_id === record.gardenId &&
-    reportData.report_date !== reportDate
-  ) {
-    duplicateType = 'same_garden_different_day';
-  } else {
-    duplicateType = 'different_garden';
-  }
-}
-      duplicateHashCount = duplicateRows?.length || 0;
+      rows.forEach((row) => {
+        if (row.image_hash && !duplicateByHash.has(row.image_hash)) {
+          duplicateByHash.set(row.image_hash, row);
+        }
+      });
     }
-    
-    const review = buildBasicReview(
-  record,
-  images,
-  duplicateType === 'same_garden_same_day'
-    ? 0
-    : duplicateRows?.length || 0
-);
+
+    const review = buildBasicReview(record, images, duplicateHashCount);
 
     const { data: report, error: reportError } = await supabase
       .from('reports')
@@ -276,7 +258,14 @@ for (const row of duplicateRows || []) {
     }
 
     try {
-      const photoRows: { report_id: string; file_url: string; image_hash: string }[] = [];
+      const photoRows: {
+        report_id: string;
+        file_url: string;
+        image_hash: string;
+        duplicate_of_photo_id?: string | null;
+        duplicate_match_type?: string | null;
+        duplicate_match_score?: number | null;
+      }[] = [];
 
       for (let index = 0; index < preparedImages.length; index += 1) {
         const image = preparedImages[index];
@@ -297,10 +286,25 @@ for (const row of duplicateRows || []) {
           .from('watering-proofs')
           .getPublicUrl(filePath);
 
+        const duplicateMatch = duplicateByHash.get(image.hash);
+        const duplicateReport = Array.isArray(duplicateMatch?.reports)
+          ? duplicateMatch.reports[0]
+          : duplicateMatch?.reports;
+        const duplicateMatchType = duplicateMatch
+          ? duplicateReport?.garden_id === record.gardenId && duplicateReport?.report_date === reportDate
+            ? 'exact_hash_same_garden_same_day'
+            : duplicateReport?.garden_id === record.gardenId
+              ? 'exact_hash_same_garden_different_day'
+              : 'exact_hash_different_report'
+          : null;
+
         photoRows.push({
           report_id: report.id,
           file_url: publicUrl.publicUrl,
           image_hash: image.hash,
+          duplicate_of_photo_id: duplicateMatch?.id || null,
+          duplicate_match_type: duplicateMatchType,
+          duplicate_match_score: duplicateMatch ? 100 : null,
         });
       }
 
