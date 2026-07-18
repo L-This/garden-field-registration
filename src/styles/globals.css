@@ -27,8 +27,16 @@ body {
   min-height: 100vh;
   background:
     radial-gradient(circle at 8% 0%, rgba(16, 185, 129, 0.2), transparent 34%),
-    radial-gradient(circle at 90% 4%, rgba(45, 212, 191, 0.18), transparent 38%),
-    radial-gradient(circle at 60% 100%, rgba(134, 239, 172, 0.14), transparent 38%),
+    radial-gradient(
+      circle at 90% 4%,
+      rgba(45, 212, 191, 0.18),
+      transparent 38%
+    ),
+    radial-gradient(
+      circle at 60% 100%,
+      rgba(134, 239, 172, 0.14),
+      transparent 38%
+    ),
     linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 44%, #eafff6 100%);
   color: var(--ink);
   font-family: Arial, "Tahoma", sans-serif;
@@ -102,7 +110,7 @@ button {
   left: -90px;
   top: -170px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.16);
+  background: rgba(255, 255, 255, 0.16);
   filter: blur(4px);
 }
 
@@ -111,8 +119,12 @@ button {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 22% 16%, rgba(255,255,255,0.2), transparent 28%),
-    linear-gradient(90deg, rgba(255,255,255,0.08), transparent 42%);
+    radial-gradient(
+      circle at 22% 16%,
+      rgba(255, 255, 255, 0.2),
+      transparent 28%
+    ),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08), transparent 42%);
   pointer-events: none;
 }
 
@@ -135,7 +147,7 @@ button {
   border-radius: 999px;
   font-weight: 900;
   backdrop-filter: blur(14px);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 
 .back-link:hover,
@@ -169,7 +181,7 @@ button {
   background: rgba(255, 255, 255, 0.17);
   border: 1px solid rgba(255, 255, 255, 0.24);
   backdrop-filter: blur(16px);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.24);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
 }
 
 .hero-date span {
@@ -209,7 +221,9 @@ button {
   overflow: hidden;
   padding: 23px;
   border-radius: 28px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .stat-card::after {
@@ -316,7 +330,9 @@ button {
   background: white;
   color: var(--ink);
   font-weight: 800;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .manager-field input:focus,
@@ -334,7 +350,9 @@ button {
   border-radius: 18px;
   padding: 0 16px;
   background: white;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .search-field input {
@@ -356,7 +374,10 @@ button {
   border: 0;
   border-radius: 999px;
   font-weight: 950;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
 }
 
 .filter-pills button {
@@ -383,7 +404,10 @@ button {
   overflow: hidden;
   border-radius: 32px;
   padding: 18px;
-  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    border-color 0.22s ease;
 }
 
 .garden-card-pro::before {
@@ -391,7 +415,11 @@ button {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(145deg, rgba(255,255,255,0.72), transparent 42%);
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.72),
+    transparent 42%
+  );
 }
 
 .garden-card-pro > * {
@@ -433,7 +461,7 @@ button {
   border-radius: 20px;
   color: var(--brand);
   background: linear-gradient(135deg, #dff8ec, #c9f6e1);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.65);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
 }
 
 .garden-card-head h3 {
@@ -597,7 +625,7 @@ button {
   position: absolute;
   inset: 8px;
   border-radius: 22px;
-  border: 1px solid rgba(255,255,255,0.72);
+  border: 1px solid rgba(255, 255, 255, 0.72);
   pointer-events: none;
 }
 
@@ -639,7 +667,9 @@ button {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .result-toast {
@@ -722,7 +752,11 @@ button {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 18% 12%, rgba(255,255,255,0.18), transparent 30%);
+  background: radial-gradient(
+    circle at 18% 12%,
+    rgba(255, 255, 255, 0.18),
+    transparent 30%
+  );
   pointer-events: none;
 }
 
@@ -747,7 +781,7 @@ button {
 .landing-hero p {
   margin: 0;
   max-width: 780px;
-  color: rgba(255,255,255,0.9);
+  color: rgba(255, 255, 255, 0.9);
   font-size: 20px;
   font-weight: 800;
   line-height: 1.8;
@@ -761,8 +795,8 @@ button {
   gap: 8px;
   padding: 11px 17px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.16);
-  border: 1px solid rgba(255,255,255,0.28);
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.28);
   color: white;
   font-weight: 900;
   backdrop-filter: blur(14px);
@@ -783,8 +817,8 @@ button {
   gap: 7px;
   padding: 11px 15px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.16);
-  border: 1px solid rgba(255,255,255,0.22);
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   color: white;
   font-weight: 850;
 }
@@ -806,11 +840,14 @@ button {
   padding: 24px;
   border-radius: 32px;
   border: 1px solid var(--line);
-  background: rgba(255,255,255,0.82);
+  background: rgba(255, 255, 255, 0.82);
   box-shadow: var(--shadow);
   backdrop-filter: blur(20px);
   overflow: hidden;
-  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    border-color 0.22s ease;
 }
 
 .project-card::before {
@@ -842,7 +879,7 @@ button {
   border-radius: 22px;
   background: linear-gradient(135deg, #dff8ec, #c9f6e1);
   color: var(--brand);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.75);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
 .project-content {
@@ -964,10 +1001,13 @@ button {
   padding: 26px !important;
   border-radius: 32px !important;
   border: 1px solid rgba(6, 95, 70, 0.1) !important;
-  background: rgba(255,255,255,0.86) !important;
+  background: rgba(255, 255, 255, 0.86) !important;
   box-shadow: 0 24px 70px rgba(6, 95, 70, 0.12) !important;
   backdrop-filter: blur(20px) !important;
-  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease !important;
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    border-color 0.22s ease !important;
 }
 
 .home-summary-card::after {
@@ -983,7 +1023,7 @@ button {
 
 .home-summary-card:hover {
   transform: translateY(-6px) !important;
-  border-color: rgba(16,185,129,0.35) !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
   box-shadow: 0 36px 95px rgba(6, 95, 70, 0.17) !important;
 }
 
@@ -996,7 +1036,7 @@ button {
   border-radius: 22px !important;
   color: #047857 !important;
   background: linear-gradient(135deg, #dff8ec, #c9f6e1) !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.8) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
 }
 
 .home-summary-card div,
@@ -1045,9 +1085,12 @@ button {
   min-height: 285px !important;
   padding: 28px !important;
   border-radius: 36px !important;
-  animation: cardRise 0.6s cubic-bezier(.2,.8,.2,1) both !important;
+  animation: cardRise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both !important;
   transform: translateY(0) scale(1) !important;
-  transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease !important;
+  transition:
+    transform 0.24s ease,
+    box-shadow 0.24s ease,
+    border-color 0.24s ease !important;
 }
 
 .project-card:hover {
@@ -1059,7 +1102,7 @@ button {
 .home-hero,
 .legendary-hero,
 .field-hero {
-  animation: heroEntrance 0.75s cubic-bezier(.2,.8,.2,1) both !important;
+  animation: heroEntrance 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) both !important;
 }
 
 .home-hero::after,
@@ -1069,18 +1112,38 @@ button {
 }
 
 @keyframes heroEntrance {
-  from { opacity: 0; transform: translateY(18px) scale(0.985); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @keyframes heroGlow {
-  from { transform: translateX(-2.5%) translateY(0) rotate(0deg); opacity: .78; }
-  to { transform: translateX(2.5%) translateY(-2%) rotate(2deg); opacity: 1; }
+  from {
+    transform: translateX(-2.5%) translateY(0) rotate(0deg);
+    opacity: 0.78;
+  }
+  to {
+    transform: translateX(2.5%) translateY(-2%) rotate(2deg);
+    opacity: 1;
+  }
 }
 
 @keyframes cardRise {
-  from { opacity: 0; transform: translateY(18px) scale(0.98); filter: blur(4px); }
-  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
 }
 
 @media (max-width: 760px) {
@@ -1116,14 +1179,16 @@ button {
 }
 
 @keyframes headerLightSweep {
-  0%, 18% {
+  0%,
+  18% {
     transform: translateX(-45%) rotate(4deg);
     opacity: 0;
   }
   45% {
     opacity: 1;
   }
-  75%, 100% {
+  75%,
+  100% {
     transform: translateX(45%) rotate(4deg);
     opacity: 0;
   }
@@ -1189,7 +1254,10 @@ button {
   padding: 14px 24px !important;
   font-size: 15px !important;
   transform: translateY(0) !important;
-  transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease !important;
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    background 0.22s ease !important;
 }
 
 .project-card:hover .project-entry-btn {
@@ -1214,10 +1282,18 @@ button {
   animation: sectionFadeUp 0.55s ease both !important;
 }
 
-.field-shell > *:nth-child(2) { animation-delay: .05s !important; }
-.field-shell > *:nth-child(3) { animation-delay: .10s !important; }
-.field-shell > *:nth-child(4) { animation-delay: .15s !important; }
-.field-shell > *:nth-child(5) { animation-delay: .20s !important; }
+.field-shell > *:nth-child(2) {
+  animation-delay: 0.05s !important;
+}
+.field-shell > *:nth-child(3) {
+  animation-delay: 0.1s !important;
+}
+.field-shell > *:nth-child(4) {
+  animation-delay: 0.15s !important;
+}
+.field-shell > *:nth-child(5) {
+  animation-delay: 0.2s !important;
+}
 
 @keyframes sectionFadeUp {
   from {
@@ -1248,7 +1324,6 @@ button {
    FINAL MOBILE FIX - HOME PAGE
 ================================= */
 @media (max-width: 760px) {
-
   .home-page,
   .project-page {
     width: calc(100% - 16px) !important;
@@ -1460,7 +1535,7 @@ button {
   min-height: 58px;
   border-radius: 18px;
   border: 1px solid rgba(216, 180, 92, 0.28);
-  background: rgba(255,255,255,.86);
+  background: rgba(255, 255, 255, 0.86);
   padding: 10px 16px;
   display: grid;
   gap: 4px;
@@ -1645,9 +1720,15 @@ button {
 }
 
 /* Stage 2: daily tasks progress */
-.stat-card.tasks-total strong { color: #047857; }
-.stat-card.tasks-completed strong { color: #059669; }
-.stat-card.tasks-remaining strong { color: #b7791f; }
+.stat-card.tasks-total strong {
+  color: #047857;
+}
+.stat-card.tasks-completed strong {
+  color: #059669;
+}
+.stat-card.tasks-remaining strong {
+  color: #b7791f;
+}
 
 .daily-completion-banner {
   display: flex;
@@ -1656,7 +1737,11 @@ button {
   padding: 22px 26px;
   border: 1px solid rgba(5, 150, 105, 0.2);
   border-radius: 28px;
-  background: linear-gradient(135deg, rgba(236, 253, 245, 0.96), rgba(209, 250, 229, 0.9));
+  background: linear-gradient(
+    135deg,
+    rgba(236, 253, 245, 0.96),
+    rgba(209, 250, 229, 0.9)
+  );
   box-shadow: 0 22px 60px rgba(5, 150, 105, 0.13);
 }
 
@@ -1687,7 +1772,11 @@ button {
 
 .garden-row-card.sent {
   border-color: rgba(5, 150, 105, 0.28);
-  background: linear-gradient(135deg, rgba(236, 253, 245, 0.92), rgba(255,255,255,0.9));
+  background: linear-gradient(
+    135deg,
+    rgba(236, 253, 245, 0.92),
+    rgba(255, 255, 255, 0.9)
+  );
 }
 
 @media (max-width: 760px) {
@@ -1697,13 +1786,15 @@ button {
     border-radius: 22px;
   }
 
-  .daily-completion-banner strong { font-size: 19px; }
+  .daily-completion-banner strong {
+    font-size: 19px;
+  }
 }
 
 /* Stage 2 UX improvements: compact overview and focused task flow */
 .tasks-overview-card {
   display: grid;
-  grid-template-columns: minmax(220px, .75fr) 1.6fr;
+  grid-template-columns: minmax(220px, 0.75fr) 1.6fr;
   gap: 18px;
   padding: 22px;
   border: 1px solid var(--line);
@@ -1734,12 +1825,23 @@ button {
   left: -42px;
   bottom: -64px;
   border-radius: 999px;
-  background: rgba(255,255,255,.1);
+  background: rgba(255, 255, 255, 0.1);
 }
 
-.overview-kicker { font-size: 18px; font-weight: 900; opacity: .86; }
-.tasks-overview-main > strong { font-size: 58px; line-height: 1; margin: 10px 0; }
-.tasks-overview-main small { font-weight: 800; opacity: .78; }
+.overview-kicker {
+  font-size: 18px;
+  font-weight: 900;
+  opacity: 0.86;
+}
+.tasks-overview-main > strong {
+  font-size: 58px;
+  line-height: 1;
+  margin: 10px 0;
+}
+.tasks-overview-main small {
+  font-weight: 800;
+  opacity: 0.78;
+}
 
 .tasks-overview-metrics {
   display: grid;
@@ -1754,15 +1856,27 @@ button {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  border: 1px solid rgba(6, 95, 70, .1);
-  background: rgba(255,255,255,.72);
+  border: 1px solid rgba(6, 95, 70, 0.1);
+  background: rgba(255, 255, 255, 0.72);
 }
 
-.tasks-overview-metrics .metric span { color: #647d76; font-weight: 900; }
-.tasks-overview-metrics .metric strong { margin-top: 12px; font-size: 42px; }
-.tasks-overview-metrics .completed strong { color: #059669; }
-.tasks-overview-metrics .remaining strong { color: #b7791f; }
-.tasks-overview-metrics .photos strong { color: #2563eb; }
+.tasks-overview-metrics .metric span {
+  color: #647d76;
+  font-weight: 900;
+}
+.tasks-overview-metrics .metric strong {
+  margin-top: 12px;
+  font-size: 42px;
+}
+.tasks-overview-metrics .completed strong {
+  color: #059669;
+}
+.tasks-overview-metrics .remaining strong {
+  color: #b7791f;
+}
+.tasks-overview-metrics .photos strong {
+  color: #2563eb;
+}
 
 .progress-panel-compact .progress-ratio {
   display: flex;
@@ -1771,8 +1885,15 @@ button {
   direction: ltr;
 }
 
-.progress-panel-compact .progress-ratio strong { font-size: 44px; color: #047857; }
-.progress-panel-compact .progress-ratio span { font-size: 25px; color: #779087; font-weight: 900; }
+.progress-panel-compact .progress-ratio strong {
+  font-size: 44px;
+  color: #047857;
+}
+.progress-panel-compact .progress-ratio span {
+  font-size: 25px;
+  color: #779087;
+  font-weight: 900;
+}
 
 .task-view-switcher {
   width: fit-content;
@@ -1780,9 +1901,9 @@ button {
   gap: 8px;
   padding: 7px;
   border-radius: 18px;
-  border: 1px solid rgba(6,95,70,.12);
-  background: rgba(255,255,255,.76);
-  box-shadow: 0 12px 30px rgba(6,43,36,.08);
+  border: 1px solid rgba(6, 95, 70, 0.12);
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: 0 12px 30px rgba(6, 43, 36, 0.08);
 }
 
 .task-view-switcher button {
@@ -1801,16 +1922,21 @@ button {
 .task-view-switcher button.active {
   color: white;
   background: linear-gradient(135deg, #059669, #047857);
-  box-shadow: 0 9px 22px rgba(5,150,105,.24);
+  box-shadow: 0 9px 22px rgba(5, 150, 105, 0.24);
 }
 
-.focused-task-area { display: block; }
+.focused-task-area {
+  display: block;
+}
 .focused-garden-card {
   position: relative;
-  grid-template-columns: minmax(240px, .85fr) minmax(360px, 1.4fr) minmax(190px, .55fr);
+  grid-template-columns: minmax(240px, 0.85fr) minmax(360px, 1.4fr) minmax(
+      190px,
+      0.55fr
+    );
   padding-top: 92px;
-  border-color: rgba(5,150,105,.24);
-  box-shadow: 0 30px 85px rgba(6,95,70,.16);
+  border-color: rgba(5, 150, 105, 0.24);
+  box-shadow: 0 30px 85px rgba(6, 95, 70, 0.16);
 }
 
 .task-navigator {
@@ -1819,22 +1945,37 @@ button {
   min-height: 58px;
   padding: 10px 14px;
   border-radius: 17px;
-  background: linear-gradient(135deg, rgba(236,253,245,.98), rgba(209,250,229,.86));
-  border: 1px solid rgba(5,150,105,.16);
+  background: linear-gradient(
+    135deg,
+    rgba(236, 253, 245, 0.98),
+    rgba(209, 250, 229, 0.86)
+  );
+  border: 1px solid rgba(5, 150, 105, 0.16);
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 14px;
 }
 
-.task-navigator span { display: block; color: #52766b; font-weight: 800; font-size: 13px; }
-.task-navigator strong { color: #065f46; font-size: 18px; }
-.task-nav-actions { display: flex; gap: 8px; }
+.task-navigator span {
+  display: block;
+  color: #52766b;
+  font-weight: 800;
+  font-size: 13px;
+}
+.task-navigator strong {
+  color: #065f46;
+  font-size: 18px;
+}
+.task-nav-actions {
+  display: flex;
+  gap: 8px;
+}
 .task-nav-actions button {
   min-height: 40px;
   padding: 0 13px;
   border-radius: 12px;
-  border: 1px solid rgba(5,150,105,.2);
+  border: 1px solid rgba(5, 150, 105, 0.2);
   background: white;
   color: #065f46;
   font-weight: 900;
@@ -1842,7 +1983,10 @@ button {
   align-items: center;
   gap: 6px;
 }
-.task-nav-actions button:disabled { opacity: .38; cursor: not-allowed; }
+.task-nav-actions button:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
 
 .focused-ready-callout {
   margin-top: 5px;
@@ -1867,34 +2011,272 @@ button {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 0 11px 25px rgba(5,150,105,.22);
+  box-shadow: 0 11px 25px rgba(5, 150, 105, 0.22);
 }
 
 .celebration-banner {
   min-height: 132px;
   background:
-    radial-gradient(circle at 10% 20%, rgba(255,255,255,.75), transparent 22%),
-    linear-gradient(135deg, rgba(209,250,229,.98), rgba(236,253,245,.96));
+    radial-gradient(
+      circle at 10% 20%,
+      rgba(255, 255, 255, 0.75),
+      transparent 22%
+    ),
+    linear-gradient(
+      135deg,
+      rgba(209, 250, 229, 0.98),
+      rgba(236, 253, 245, 0.96)
+    );
 }
-.celebration-label { display: block; color: #b7791f; font-weight: 950; margin-bottom: 3px; }
-.celebration-banner strong { font-size: 27px; }
+.celebration-label {
+  display: block;
+  color: #b7791f;
+  font-weight: 950;
+  margin-bottom: 3px;
+}
+.celebration-banner strong {
+  font-size: 27px;
+}
 
 @media (max-width: 900px) {
-  .tasks-overview-card { grid-template-columns: 1fr; }
-  .tasks-overview-main { min-height: 125px; }
-  .tasks-overview-metrics .metric { min-height: 115px; }
-  .focused-garden-card { grid-template-columns: 1fr; padding-top: 112px; }
-  .task-navigator { align-items: flex-start; }
+  .tasks-overview-card {
+    grid-template-columns: 1fr;
+  }
+  .tasks-overview-main {
+    min-height: 125px;
+  }
+  .tasks-overview-metrics .metric {
+    min-height: 115px;
+  }
+  .focused-garden-card {
+    grid-template-columns: 1fr;
+    padding-top: 112px;
+  }
+  .task-navigator {
+    align-items: flex-start;
+  }
 }
 
 @media (max-width: 650px) {
-  .tasks-overview-metrics { grid-template-columns: 1fr; }
-  .tasks-overview-metrics .metric { min-height: 92px; flex-direction: row; justify-content: space-between; align-items: center; }
-  .tasks-overview-metrics .metric strong { margin-top: 0; font-size: 34px; }
-  .task-view-switcher { width: 100%; }
-  .task-view-switcher button { flex: 1; justify-content: center; padding-inline: 10px; }
-  .focused-garden-card { padding-top: 150px; }
-  .task-navigator { flex-direction: column; align-items: stretch; }
-  .task-nav-actions { display: grid; grid-template-columns: 1fr 1fr; }
-  .task-nav-actions button { justify-content: center; }
+  .tasks-overview-metrics {
+    grid-template-columns: 1fr;
+  }
+  .tasks-overview-metrics .metric {
+    min-height: 92px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .tasks-overview-metrics .metric strong {
+    margin-top: 0;
+    font-size: 34px;
+  }
+  .task-view-switcher {
+    width: 100%;
+  }
+  .task-view-switcher button {
+    flex: 1;
+    justify-content: center;
+    padding-inline: 10px;
+  }
+  .focused-garden-card {
+    padding-top: 150px;
+  }
+  .task-navigator {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .task-nav-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .task-nav-actions button {
+    justify-content: center;
+  }
+}
+
+/* Stage 2 UX refinement */
+.tasks-overview-metrics .metric span {
+  font-size: 15px;
+}
+
+.task-view-switcher {
+  margin-top: 26px;
+  padding: 7px;
+  border: 1px solid rgba(4, 120, 87, 0.14);
+  box-shadow: 0 14px 34px rgba(6, 78, 59, 0.09);
+}
+
+.task-view-switcher button {
+  min-width: 190px;
+  border-radius: 15px;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.task-view-switcher button:hover {
+  transform: translateY(-1px);
+}
+
+.task-view-switcher button.active {
+  box-shadow: 0 10px 24px rgba(4, 120, 87, 0.22);
+}
+
+.focused-task-area {
+  max-width: 1180px;
+  margin-inline: auto;
+}
+
+.focused-garden-card {
+  border: 1px solid rgba(4, 120, 87, 0.2);
+  box-shadow: 0 26px 60px rgba(6, 78, 59, 0.13);
+  overflow: hidden;
+}
+
+.focused-garden-card .garden-row-title h3 {
+  font-size: clamp(24px, 2.1vw, 34px);
+}
+
+.focused-garden-card .garden-row-title p {
+  font-size: 17px;
+}
+
+.focused-garden-card .multi-photo-strip {
+  min-height: 230px;
+}
+
+.task-navigator {
+  background: linear-gradient(
+    135deg,
+    rgba(236, 253, 245, 0.98),
+    rgba(209, 250, 229, 0.9)
+  );
+  border-bottom: 1px solid rgba(4, 120, 87, 0.14);
+}
+
+.task-navigator strong {
+  font-size: 20px;
+}
+
+.task-nav-actions button:disabled,
+.next-task-primary:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.next-task-hint {
+  display: block;
+  width: 100%;
+  text-align: center;
+  color: #8a6650;
+  font-weight: 800;
+  line-height: 1.6;
+}
+
+.completion-screen {
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  padding: 46px 28px;
+  background:
+    radial-gradient(
+      circle at 12% 18%,
+      rgba(255, 255, 255, 0.55),
+      transparent 30%
+    ),
+    linear-gradient(135deg, #d1fae5, #ecfdf5 52%, #ccfbf1);
+  border: 1px solid rgba(5, 150, 105, 0.24);
+  box-shadow: 0 28px 70px rgba(5, 100, 75, 0.15);
+}
+
+.completion-screen .completion-icon {
+  width: 86px;
+  height: 86px;
+  margin: 0 auto 18px;
+  border-radius: 28px;
+  background: #047857;
+  color: white;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 18px 34px rgba(4, 120, 87, 0.27);
+}
+
+.completion-screen .completion-copy {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.completion-screen .celebration-label {
+  color: #047857;
+  font-weight: 1000;
+  font-size: 18px;
+}
+
+.completion-screen strong {
+  font-size: clamp(28px, 3vw, 44px);
+  color: #064e3b;
+}
+
+.completion-screen p {
+  margin: 0;
+  font-size: 18px;
+  color: #4d7469;
+  font-weight: 800;
+}
+
+.completion-submit-button {
+  margin-top: 26px;
+  min-width: 220px;
+  min-height: 58px;
+  border: 0;
+  border-radius: 18px;
+  background: #047857;
+  color: white;
+  font: inherit;
+  font-weight: 1000;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 16px 30px rgba(4, 120, 87, 0.25);
+  cursor: pointer;
+}
+
+.completion-submit-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.progress-panel-compact .progress-ratio {
+  align-items: baseline;
+  gap: 9px;
+}
+
+@media (max-width: 720px) {
+  .task-view-switcher {
+    position: sticky;
+    top: 8px;
+    z-index: 20;
+  }
+
+  .task-view-switcher button {
+    min-width: 0;
+    font-size: 14px;
+  }
+
+  .focused-garden-card .multi-photo-strip {
+    min-height: 180px;
+  }
+
+  .completion-screen {
+    min-height: 310px;
+    padding: 36px 18px;
+  }
 }
