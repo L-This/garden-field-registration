@@ -38,8 +38,51 @@ type PreparedImage = {
   hash: string;
 };
 
+const RIYADH_TIME_ZONE = 'Asia/Riyadh';
+
+type ScheduleDayColumn =
+  | 'sunday'
+  | 'monday'
+  | 'tuesday'
+  | 'wednesday'
+  | 'thursday'
+  | 'friday'
+  | 'saturday';
+
+function getRiyadhDateParts(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: RIYADH_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    weekday: 'long',
+  }).formatToParts(date);
+
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value || '';
+
+  return {
+    date: `${value('year')}-${value('month')}-${value('day')}`,
+    dayColumn: value('weekday').toLowerCase() as ScheduleDayColumn,
+  };
+}
+
 function todayDate() {
-  return new Date().toISOString().slice(0, 10);
+  return getRiyadhDateParts().date;
+}
+
+async function isGardenScheduledToday(projectId: string, gardenId: string) {
+  const { dayColumn } = getRiyadhDateParts();
+  const { data, error } = await supabase
+    .from('watering_schedules')
+    .select(`garden_id, daily_watering, ${dayColumn}`)
+    .eq('project_id', projectId)
+    .eq('garden_id', gardenId)
+    .eq('active', true)
+    .or(`daily_watering.eq.true,${dayColumn}.eq.true`)
+    .maybeSingle();
+
+  return !error && Boolean(data);
 }
 
 function base64ToBlob(dataUrl: string): Blob {
@@ -182,6 +225,13 @@ export async function submitIrrigationReport(payload: SubmitPayload): Promise<Su
   const reportDate = todayDate();
 
   for (const record of recordsWithImage) {
+    const scheduledToday = await isGardenScheduledToday(project.id, record.gardenId);
+
+    if (!scheduledToday) {
+      failed += 1;
+      continue;
+    }
+
     const images = record.imagePreviews?.length
       ? record.imagePreviews
       : record.imagePreview

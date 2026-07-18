@@ -62,12 +62,45 @@ type UiGarden = {
   zone?: string;
 };
 
-const todayLabel = new Intl.DateTimeFormat('ar-SA', {
-  weekday: 'long',
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-}).format(new Date());
+const RIYADH_TIME_ZONE = 'Asia/Riyadh';
+
+type ScheduleDayColumn =
+  | 'sunday'
+  | 'monday'
+  | 'tuesday'
+  | 'wednesday'
+  | 'thursday'
+  | 'friday'
+  | 'saturday';
+
+const scheduleDayColumns: ScheduleDayColumn[] = [
+  'sunday',
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+];
+
+function getRiyadhDayColumn(date = new Date()): ScheduleDayColumn {
+  const weekday = new Intl.DateTimeFormat('en-US', {
+    timeZone: RIYADH_TIME_ZONE,
+    weekday: 'long',
+  }).format(date).toLowerCase() as ScheduleDayColumn;
+
+  return scheduleDayColumns.includes(weekday) ? weekday : 'sunday';
+}
+
+function getRiyadhTodayLabel(date = new Date()) {
+  return new Intl.DateTimeFormat('ar-SA', {
+    timeZone: RIYADH_TIME_ZONE,
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(date);
+}
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -81,6 +114,7 @@ function fileToBase64(file: File): Promise<string> {
 export default function ProjectPage() {
   const params = useParams();
   const projectId = String(params.projectId || '');
+  const todayLabel = getRiyadhTodayLabel();
 
   const [project, setProject] = useState<UiProject | null>(null);
   const [gardens, setGardens] = useState<UiGarden[]>([]);
@@ -176,16 +210,45 @@ export default function ProjectPage() {
 
   async function loadGardens(projectDbId: string) {
     setLoadingGardens(true);
+    setPageError('');
+
+    const dayColumn = getRiyadhDayColumn();
+
+    const { data: scheduleRows, error: schedulesError } = await supabase
+      .from('watering_schedules')
+      .select(`garden_id, daily_watering, ${dayColumn}`)
+      .eq('project_id', projectDbId)
+      .or(`daily_watering.eq.true,${dayColumn}.eq.true`);
+
+    if (schedulesError) {
+      setPageError(`تعذر تحميل جدول ري اليوم: ${schedulesError.message}`);
+      setGardens([]);
+      setLoadingGardens(false);
+      return;
+    }
+
+    const scheduledGardenIds = Array.from(
+      new Set((scheduleRows || []).map((row) => String(row.garden_id)).filter(Boolean))
+    );
+
+    if (!scheduledGardenIds.length) {
+      setGardens([]);
+      setDrafts({});
+      setLoadingGardens(false);
+      return;
+    }
 
     const { data: gardenRows, error: gardensError } = await supabase
       .from('gardens')
       .select('id, name')
       .eq('project_id', projectDbId)
       .eq('active', true)
+      .in('id', scheduledGardenIds)
       .order('created_at', { ascending: true });
 
     if (gardensError) {
-      setPageError('تعذر تحميل حدائق المشروع.');
+      setPageError(`تعذر تحميل مواقع اليوم: ${gardensError.message}`);
+      setGardens([]);
       setLoadingGardens(false);
       return;
     }
@@ -194,6 +257,13 @@ export default function ProjectPage() {
       id: garden.id,
       name: garden.name,
     })));
+
+    setDrafts((current) => {
+      const allowedIds = new Set(scheduledGardenIds);
+      return Object.fromEntries(
+        Object.entries(current).filter(([gardenId]) => allowedIds.has(gardenId))
+      );
+    });
 
     setLoadingGardens(false);
   }
@@ -435,7 +505,7 @@ export default function ProjectPage() {
       </section>
 
       <section className="stats-grid">
-        <div className="stat-card"><span>إجمالي الحدائق</span><strong>{gardens.length}</strong></div>
+        <div className="stat-card"><span>مواقع اليوم</span><strong>{gardens.length}</strong></div>
         <div className="stat-card"><span>جاهزة للإرسال</span><strong>{readyCount}</strong></div>
         <div className="stat-card"><span>إجمالي الصور</span><strong>{withImage}</strong></div>
         <div className="stat-card"><span>مواقع محفوظة</span><strong>{withLocation}</strong></div>
@@ -458,7 +528,7 @@ export default function ProjectPage() {
 
         <div className="search-field">
           <Search size={18} />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحث باسم الحديقة أو النطاق" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحث باسم الموقع أو النطاق" />
         </div>
 
         <div className="filter-pills">
@@ -472,11 +542,17 @@ export default function ProjectPage() {
       {loadingGardens ? (
         <section className="project-empty-state">
           <Loader2 className="spin" size={30} />
-          <h2>جاري تحميل الحدائق</h2>
+          <h2>جاري تحميل مهام اليوم</h2>
         </section>
       ) : (
         <section className="gardens-list-rows">
-          {filteredGardens.map((garden) => {
+          {!gardens.length ? (
+            <div className="project-empty-state">
+              <CheckCircle2 size={34} />
+              <h2>لا توجد مواقع مجدولة اليوم</h2>
+              <p>جدول الري لهذا المشروع لا يحتوي على مهام في يوم {todayLabel}.</p>
+            </div>
+          ) : filteredGardens.length ? filteredGardens.map((garden) => {
             const draft = drafts[garden.id];
             const status = draft?.status || 'empty';
             const images = draft?.imagePreviews || [];
@@ -541,14 +617,20 @@ export default function ProjectPage() {
                 </div>
               </article>
             );
-          })}
+          }) : (
+            <div className="project-empty-state">
+              <Search size={30} />
+              <h2>لا توجد نتائج مطابقة</h2>
+              <p>غيّر عبارة البحث أو اختر مرشحًا آخر.</p>
+            </div>
+          )}
         </section>
       )}
 
       <section className="submit-dock">
         <div>
-          <strong>{readyCount} حديقة جاهزة</strong>
-          <span>سيتم إرسال الحدائق التي تحتوي على صور، ويفضل إضافة الموقع لكل حديقة.</span>
+          <strong>{readyCount} موقع جاهز</strong>
+          <span>سيتم إرسال مواقع اليوم التي تحتوي على صور، ويفضل إضافة الموقع لكل موقع.</span>
         </div>
         <button onClick={submitReport} disabled={loading || !readyCount}>
           {loading ? <Loader2 className="spin" size={18} /> : <CloudUpload size={18} />}
