@@ -1643,3 +1643,59 @@ button {
     height: 96px;
   }
 }
+
+/* Stage 2: daily tasks progress */
+.stat-card.tasks-total strong { color: #047857; }
+.stat-card.tasks-completed strong { color: #059669; }
+.stat-card.tasks-remaining strong { color: #b7791f; }
+
+.daily-completion-banner {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 26px;
+  border: 1px solid rgba(5, 150, 105, 0.2);
+  border-radius: 28px;
+  background: linear-gradient(135deg, rgba(236, 253, 245, 0.96), rgba(209, 250, 229, 0.9));
+  box-shadow: 0 22px 60px rgba(5, 150, 105, 0.13);
+}
+
+.daily-completion-banner .completion-icon {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 58px;
+  border-radius: 20px;
+  color: white;
+  background: linear-gradient(135deg, #10b981, #047857);
+  box-shadow: 0 14px 30px rgba(5, 150, 105, 0.28);
+}
+
+.daily-completion-banner strong {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 22px;
+  color: #065f46;
+}
+
+.daily-completion-banner p {
+  margin: 0;
+  color: #4b7669;
+  font-weight: 700;
+}
+
+.garden-row-card.sent {
+  border-color: rgba(5, 150, 105, 0.28);
+  background: linear-gradient(135deg, rgba(236, 253, 245, 0.92), rgba(255,255,255,0.9));
+}
+
+@media (max-width: 760px) {
+  .daily-completion-banner {
+    align-items: flex-start;
+    padding: 18px;
+    border-radius: 22px;
+  }
+
+  .daily-completion-banner strong { font-size: 19px; }
+}

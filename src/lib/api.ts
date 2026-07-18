@@ -78,7 +78,6 @@ async function isGardenScheduledToday(projectId: string, gardenId: string) {
     .select(`garden_id, daily_watering, ${dayColumn}`)
     .eq('project_id', projectId)
     .eq('garden_id', gardenId)
-    .eq('active', true)
     .or(`daily_watering.eq.true,${dayColumn}.eq.true`)
     .maybeSingle();
 

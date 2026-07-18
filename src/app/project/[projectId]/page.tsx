@@ -383,7 +383,12 @@ export default function ProjectPage() {
   const withImage = Object.values(drafts).reduce((sum, draft) => sum + (draft.imagePreviews?.length || 0), 0);
   const withLocation = Object.values(drafts).filter((draft) => Boolean(draft.location)).length;
   const readyCount = readyDrafts.length;
-  const progress = gardens.length ? Math.round((readyCount / gardens.length) * 100) : 0;
+  const completedCount = Object.values(drafts).filter((draft) =>
+    draft.status === 'ready' || draft.status === 'missing-location' || draft.status === 'sent'
+  ).length;
+  const remainingCount = Math.max(gardens.length - completedCount, 0);
+  const progress = gardens.length ? Math.round((completedCount / gardens.length) * 100) : 0;
+  const allTasksCompleted = gardens.length > 0 && remainingCount === 0;
 
   const filteredGardens = useMemo(() => {
     return gardens.filter((garden) => {
@@ -417,6 +422,20 @@ export default function ProjectPage() {
       });
 
       setResult(response);
+
+      if (response.ok && response.sent) {
+        const submittedIds = new Set(readyDrafts.map((draft) => draft.gardenId));
+        setDrafts((current) =>
+          Object.fromEntries(
+            Object.entries(current).map(([gardenId, draft]) => [
+              gardenId,
+              submittedIds.has(gardenId)
+                ? { ...draft, status: 'sent' as DraftStatus, note: 'تم إرسال المهمة بنجاح' }
+                : draft,
+            ])
+          )
+        );
+      }
     } catch {
       setResult({
         ok: false,
@@ -505,20 +524,30 @@ export default function ProjectPage() {
       </section>
 
       <section className="stats-grid">
-        <div className="stat-card"><span>مواقع اليوم</span><strong>{gardens.length}</strong></div>
-        <div className="stat-card"><span>جاهزة للإرسال</span><strong>{readyCount}</strong></div>
+        <div className="stat-card tasks-total"><span>مهام اليوم</span><strong>{gardens.length}</strong></div>
+        <div className="stat-card tasks-completed"><span>تم الإنجاز</span><strong>{completedCount}</strong></div>
+        <div className="stat-card tasks-remaining"><span>المتبقي</span><strong>{remainingCount}</strong></div>
         <div className="stat-card"><span>إجمالي الصور</span><strong>{withImage}</strong></div>
-        <div className="stat-card"><span>مواقع محفوظة</span><strong>{withLocation}</strong></div>
       </section>
 
       <section className="progress-panel">
         <div>
-          <h2>نسبة التجهيز اليومي</h2>
-          <p>اسم المسؤول مرتبط بالمشروع تلقائيًا. جهّز الصور والمواقع ثم أرسل التقرير دفعة واحدة.</p>
+          <h2>تقدم مهام اليوم</h2>
+          <p>{allTasksCompleted ? 'اكتملت جميع مواقع اليوم وأصبحت جاهزة للإرسال.' : `أنجز ${completedCount} من أصل ${gardens.length} مهمة، والمتبقي ${remainingCount}.`}</p>
         </div>
         <strong>{progress}%</strong>
         <div className="progress-track"><span style={{ width: `${progress}%` }} /></div>
       </section>
+
+      {allTasksCompleted && (
+        <section className="daily-completion-banner">
+          <div className="completion-icon"><CheckCircle2 size={32} /></div>
+          <div>
+            <strong>تم إنجاز جميع مهام اليوم</strong>
+            <p>تم تجهيز المواقع المجدولة بالكامل. راجع البيانات ثم اضغط إرسال التقرير.</p>
+          </div>
+        </section>
+      )}
 
       <section className="toolbar-card contractor-toolbar-card">
         <div className="manager-static-field">
@@ -576,6 +605,7 @@ export default function ProjectPage() {
                     {status === 'missing-location' && <span className="status warning"><MapPin size={15} /> الصور جاهزة والموقع ناقص</span>}
                     {status === 'empty' && <span className="status muted"><XCircle size={15} /> لم يتم التجهيز</span>}
                     {status === 'failed' && <span className="status danger"><XCircle size={15} /> يحتاج مراجعة</span>}
+                    {status === 'sent' && <span className="status success"><CheckCircle2 size={15} /> تم إرسال المهمة</span>}
                     {draft?.note && <small>{draft.note}</small>}
                   </div>
                 </div>
@@ -629,8 +659,8 @@ export default function ProjectPage() {
 
       <section className="submit-dock">
         <div>
-          <strong>{readyCount} موقع جاهز</strong>
-          <span>سيتم إرسال مواقع اليوم التي تحتوي على صور، ويفضل إضافة الموقع لكل موقع.</span>
+          <strong>{readyCount} مهمة جاهزة للإرسال</strong>
+          <span>{remainingCount ? `باقي ${remainingCount} مهمة غير مكتملة.` : 'اكتملت مهام اليوم، ويمكن إرسال التقرير الآن.'}</span>
         </div>
         <button onClick={submitReport} disabled={loading || !readyCount}>
           {loading ? <Loader2 className="spin" size={18} /> : <CloudUpload size={18} />}
