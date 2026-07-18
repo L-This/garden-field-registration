@@ -2871,3 +2871,70 @@ button {
   .completion-actions { width: 100%; }
   .completion-actions > * { width: 100%; }
 }
+
+/* Final field workflow refinements */
+.progress-track span {
+  transition: width .45s cubic-bezier(.22, 1, .36, 1);
+}
+.field-task-card {
+  animation: fieldTaskFadeSlide .42s cubic-bezier(.22, 1, .36, 1) both;
+}
+@keyframes fieldTaskFadeSlide {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.sent-report-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border: 1px solid rgba(37, 99, 235, .18);
+  border-radius: 14px;
+  background: rgba(239, 246, 255, .86);
+  color: #1e3a8a;
+  margin: 8px auto;
+  font-weight: 850;
+}
+.sent-report-number strong { font-size: 16px; letter-spacing: .04em; }
+.submit-progress-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: rgba(4, 47, 36, .72);
+  backdrop-filter: blur(9px);
+}
+.submit-progress-card {
+  width: min(440px, 100%);
+  padding: 30px;
+  border-radius: 26px;
+  background: rgba(255,255,255,.97);
+  box-shadow: 0 30px 80px rgba(0,0,0,.24);
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  text-align: center;
+  animation: submitCardEnter .32s ease both;
+}
+.submit-progress-card > strong { color: #064e3b; font-size: 24px; }
+.submit-progress-steps { width: 100%; display: grid; gap: 9px; }
+.submit-progress-steps span {
+  padding: 11px 14px;
+  border-radius: 13px;
+  background: #f1f5f4;
+  color: #7a8d87;
+  font-weight: 850;
+  transition: .25s ease;
+}
+.submit-progress-steps span.active {
+  background: #dcfce7;
+  color: #047857;
+  box-shadow: inset 0 0 0 1px rgba(16,185,129,.18);
+}
+@keyframes submitCardEnter {
+  from { opacity: 0; transform: translateY(14px) scale(.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}

@@ -61,6 +61,7 @@ type FieldSubmitResult = {
   sent?: number;
   duplicates?: number;
   failed?: number;
+  reportNumber?: string;
 };
 
 type UiProject = {
@@ -168,6 +169,9 @@ export default function ProjectPage() {
   const [imageSuccessGardenId, setImageSuccessGardenId] = useState<string | null>(null);
   const [locationSuccessGardenId, setLocationSuccessGardenId] = useState<string | null>(null);
   const [reviewAfterCompletion, setReviewAfterCompletion] = useState(false);
+  const [submitStage, setSubmitStage] = useState<
+    "idle" | "uploading" | "saving" | "verifying" | "done"
+  >("idle");
   const [, setClockTick] = useState(0);
   const lightboxTouchStartX = useRef<number | null>(null);
 
@@ -562,6 +566,10 @@ export default function ProjectPage() {
 
     setLoading(true);
     setResult(null);
+    setSubmitStage("uploading");
+
+    const stageTimer1 = window.setTimeout(() => setSubmitStage("saving"), 700);
+    const stageTimer2 = window.setTimeout(() => setSubmitStage("verifying"), 1500);
 
     try {
       const response = await submitIrrigationReport({
@@ -575,10 +583,27 @@ export default function ProjectPage() {
         })) as GardenDraft[],
       });
 
-      setResult(response);
+      const completedAt = new Date();
+      const reportNumber = response.ok
+        ? `IRR-${new Intl.DateTimeFormat("en-CA", {
+            timeZone: RIYADH_TIME_ZONE,
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: false,
+          })
+            .format(completedAt)
+            .replace(/\D/g, "")}`
+        : undefined;
+
+      setResult({ ...response, reportNumber });
 
       if (response.ok && response.sent) {
-        setSubmittedAt(new Date());
+        setSubmitStage("done");
+        setSubmittedAt(completedAt);
         setReviewAfterCompletion(false);
         const submittedIds = new Set(
           readyDrafts.map((draft) => draft.gardenId),
@@ -599,6 +624,7 @@ export default function ProjectPage() {
         );
       }
     } catch {
+      setSubmitStage("idle");
       setResult({
         ok: false,
         message: "تعذر إرسال التقرير. تحقق من الربط الخلفي ثم أعد المحاولة.",
@@ -607,6 +633,8 @@ export default function ProjectPage() {
         failed: readyDrafts.length,
       });
     } finally {
+      window.clearTimeout(stageTimer1);
+      window.clearTimeout(stageTimer2);
       setLoading(false);
     }
   };
@@ -752,8 +780,14 @@ export default function ProjectPage() {
                 <div><Camera size={22} /><span>عدد الصور</span><strong>{withImage}</strong></div>
                 <div><Clock3 size={22} /><span>وقت الإرسال</span><strong>{submittedTimeLabel}</strong></div>
               </div>
-              <p>شكرًا لك</p>
-              <small>تم حفظ جميع المهام والصور والمواقع بنجاح.</small>
+              <p>تم إرسال تقرير اليوم وحفظه في النظام المركزي.</p>
+              {result.reportNumber && (
+                <div className="sent-report-number">
+                  <span>رقم التقرير</span>
+                  <strong dir="ltr">{result.reportNumber}</strong>
+                </div>
+              )}
+              <small>شكرًا لك، تم حفظ جميع المهام والصور والمواقع بنجاح.</small>
             </div>
             <Link href="/" className="completion-back-projects">
               <ArrowLeft size={19} /> العودة للمشاريع
@@ -789,7 +823,7 @@ export default function ProjectPage() {
                 </div>
               </div>
               <small>
-                تم تجهيز جميع المواقع، ويمكنك الآن إرسال تقرير اليوم.
+                تم تجهيز التقرير وهو جاهز للإرسال إلى النظام المركزي.
               </small>
             </div>
             <div className="completion-actions">
@@ -803,7 +837,7 @@ export default function ProjectPage() {
                 }}
                 disabled={loading}
               >
-                <Undo2 size={19} /> العودة للمهمة الأخيرة
+                <Undo2 size={19} /> مراجعة آخر مهمة
               </button>
               <button
                 className="completion-submit-button"
@@ -874,9 +908,9 @@ export default function ProjectPage() {
                     <span>{progress}%</span>
                   </div>
                   <small>
-                    الإنجاز
+                    تم إنجاز
                     <br />
-                    <bdi dir="ltr">{completedCount} / {gardens.length}</bdi>
+                    <bdi dir="ltr">{completedCount} من {gardens.length}</bdi>
                   </small>
                 </div>
               </header>
@@ -1303,6 +1337,20 @@ export default function ProjectPage() {
             <CheckCircle2 size={48} />
             <strong>تم تجهيز الموقع</strong>
             <span>جاري فتح المهمة التالية...</span>
+          </div>
+        </div>
+      )}
+
+      {loading && submitStage !== "idle" && (
+        <div className="submit-progress-overlay" role="status" aria-live="polite">
+          <div className="submit-progress-card">
+            <Loader2 className="spin" size={42} />
+            <strong>جاري إرسال تقرير اليوم</strong>
+            <div className="submit-progress-steps">
+              <span className={submitStage === "uploading" || submitStage === "saving" || submitStage === "verifying" || submitStage === "done" ? "active" : ""}>رفع الصور...</span>
+              <span className={submitStage === "saving" || submitStage === "verifying" || submitStage === "done" ? "active" : ""}>حفظ البيانات...</span>
+              <span className={submitStage === "verifying" || submitStage === "done" ? "active" : ""}>التحقق من التقرير...</span>
+            </div>
           </div>
         </div>
       )}
