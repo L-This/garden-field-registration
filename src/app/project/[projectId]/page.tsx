@@ -23,6 +23,8 @@ import {
   Sprout,
   Trash2,
   XCircle,
+  ZoomIn,
+  X,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { submitIrrigationReport } from "@/lib/api";
@@ -144,6 +146,7 @@ export default function ProjectPage() {
   const [result, setResult] = useState<FieldSubmitResult | null>(null);
   const [viewMode, setViewMode] = useState<"focus" | "all">("focus");
   const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadProject() {
@@ -457,6 +460,14 @@ export default function ProjectPage() {
     ["ready", "sent"].includes(currentDraft.status),
   );
 
+  const scrollToCurrentTask = () => {
+    window.setTimeout(() => {
+      document
+        .getElementById("current-field-task")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  };
+
   const goToNextTask = () => {
     if (!currentTaskCompleted) {
       window.alert("أكمل رفع الصور ثم احفظ الموقع قبل الانتقال.");
@@ -466,10 +477,12 @@ export default function ProjectPage() {
     setCurrentTaskIndex((index) =>
       Math.min(index + 1, Math.max(gardens.length - 1, 0)),
     );
+    scrollToCurrentTask();
   };
 
   const goToPreviousTask = () => {
     setCurrentTaskIndex((index) => Math.max(index - 1, 0));
+    scrollToCurrentTask();
   };
 
   const filteredGardens = useMemo(() => {
@@ -622,23 +635,21 @@ export default function ProjectPage() {
 
       <section className="tasks-overview-card">
         <div className="tasks-overview-main">
-          <span className="overview-kicker">مهام اليوم</span>
+          <span className="overview-kicker">📋 مهام اليوم</span>
           <strong>{gardens.length}</strong>
-          <small>
-            {gardens.length} مهمة اليوم · {todayLabel}
-          </small>
+          <small>{todayLabel}</small>
         </div>
         <div className="tasks-overview-metrics">
           <div className="metric completed">
-            <span>{completedCount} تم</span>
+            <span>✅ تم</span>
             <strong>{completedCount}</strong>
           </div>
           <div className="metric remaining">
-            <span>{remainingCount} متبقي</span>
+            <span>⌛ المتبقي</span>
             <strong>{remainingCount}</strong>
           </div>
           <div className="metric photos">
-            <span>{withImage} صورة</span>
+            <span>📷 الصور</span>
             <strong>{withImage}</strong>
           </div>
         </div>
@@ -656,6 +667,7 @@ export default function ProjectPage() {
         <div className="progress-ratio">
           <strong>{completedCount}</strong>
           <span>من {gardens.length}</span>
+          <em>{progress}%</em>
         </div>
         <div className="progress-track">
           <span style={{ width: `${progress}%` }} />
@@ -669,10 +681,9 @@ export default function ProjectPage() {
           </div>
           <div className="completion-copy">
             <span className="celebration-label">أحسنت</span>
-            <strong>تم إنجاز جميع مهام اليوم</strong>
-            <p>
-              {completedCount} من {gardens.length} — كل المواقع جاهزة للإرسال.
-            </p>
+            <strong>تم إنهاء جميع مهام اليوم</strong>
+            <p>{completedCount} من {gardens.length}</p>
+            <small>تم تجهيز جميع المواقع، ويمكنك الآن إرسال التقرير.</small>
           </div>
           <button
             className="completion-submit-button"
@@ -716,20 +727,13 @@ export default function ProjectPage() {
               <p>جدول الري لهذا المشروع لا يحتوي على مهام في يوم {todayLabel}.</p>
             </section>
           ) : viewMode === "focus" && currentGarden ? (
-            <section className="field-task-shell">
+            <section className="field-task-shell" id="current-field-task">
               <header className="field-task-heading">
                 <div>
                   <span>المهمة الحالية</span>
                   <strong>{currentTaskIndex + 1} / {gardens.length}</strong>
                 </div>
-                <div className="task-nav-actions">
-                  <button onClick={goToPreviousTask} disabled={currentTaskIndex === 0}>
-                    <ChevronRight size={18} /> السابق
-                  </button>
-                  <button onClick={goToNextTask} disabled={!currentTaskCompleted || currentTaskIndex >= gardens.length - 1}>
-                    التالي <ChevronLeft size={18} />
-                  </button>
-                </div>
+                <small>الإنجاز: {completedCount} / {gardens.length} ({progress}%)</small>
               </header>
 
               {(() => {
@@ -741,7 +745,7 @@ export default function ProjectPage() {
                 const isReady = draft?.status === "ready";
                 const isSent = draft?.status === "sent";
                 const mapsUrl = draft?.location ? `https://www.google.com/maps?q=${draft.location.lat},${draft.location.lng}` : "";
-                const stageLabel = isSent ? "تم الإرسال" : isReady ? "جاهزة للإرسال" : hasImages || hasLocation ? "جارٍ التجهيز" : "لم تبدأ";
+                const stageLabel = isSent ? "✅ تم الإرسال" : isReady ? "🟢 جاهزة للإرسال" : hasImages || hasLocation ? "🟠 جارٍ التنفيذ" : "🔴 لم تبدأ";
                 const stageClass = isSent ? "sent" : isReady ? "ready" : hasImages || hasLocation ? "working" : "idle";
 
                 return (
@@ -759,7 +763,7 @@ export default function ProjectPage() {
                       <div className={hasImages ? "done" : ""}>
                         <span><Camera size={20} /></span>
                         <strong>الصور</strong>
-                        <small>{hasImages ? `${images.length} صورة محفوظة` : "لم تُرفع بعد"}</small>
+                        <small>{hasImages ? `📷 ${images.length} صورة مرفوعة` : "لم تُرفع بعد"}</small>
                       </div>
                       <div className={hasLocation ? "done" : ""}>
                         <span><LocateFixed size={20} /></span>
@@ -771,8 +775,11 @@ export default function ProjectPage() {
                     <div className="task-proof-area">
                       {images.length ? images.map((src, index) => (
                         <div className="task-proof-thumb" key={`${garden.id}-${index}`}>
-                          <img src={src} alt={`${garden.name} ${index + 1}`} />
-                          <button onClick={() => removeImage(garden.id, index)} title="حذف الصورة"><Trash2 size={15} /></button>
+                          <button className="task-proof-open" onClick={() => setPreviewImage(src)} title="تكبير الصورة">
+                            <img src={src} alt={`${garden.name} ${index + 1}`} />
+                            <span><ZoomIn size={18} /> تكبير</span>
+                          </button>
+                          <button className="task-proof-delete" onClick={() => removeImage(garden.id, index)} title="حذف الصورة"><Trash2 size={15} /></button>
                         </div>
                       )) : (
                         <div className="task-proof-empty"><ImageIcon size={38} /><strong>لا توجد صور بعد</strong><span>ارفع صورة أو أكثر لإثبات تنفيذ المهمة</span></div>
@@ -787,7 +794,7 @@ export default function ProjectPage() {
                       </label>
                       <button className="field-big-action" onClick={() => handleLocation(garden.id)}>
                         <LocateFixed size={23} />
-                        <span><strong>{hasLocation ? "تحديث الموقع" : "حفظ الموقع"}</strong><small>{hasLocation ? "الموقع محفوظ ويمكن تحديثه" : "استخدم موقع الجهاز الحالي"}</small></span>
+                        <span><strong>{hasLocation ? "إعادة تحديد الموقع" : "حفظ الموقع"}</strong><small>{hasLocation ? "الموقع محفوظ ويمكن تحديده من جديد" : "استخدم موقع الجهاز الحالي"}</small></span>
                       </button>
                     </div>
 
@@ -795,16 +802,23 @@ export default function ProjectPage() {
                     {draft?.note && <p className="field-task-note">{draft.note}</p>}
 
                     <footer className={`field-task-footer ${isReady || isSent ? "complete" : ""}`}>
-                      {isSent ? (
-                        <><CheckCircle2 size={24} /><div><strong>تم إرسال هذه المهمة</strong><span>حُفظ التقرير بنجاح.</span></div></>
-                      ) : isReady ? (
-                        <><CheckCircle2 size={24} /><div><strong>تم تجهيز الموقع</strong><span>الصور والموقع مكتملان.</span></div></>
-                      ) : (
-                        <><XCircle size={24} /><div><strong>{!hasImages ? "ارفع الصور أولًا" : "احفظ الموقع الآن"}</strong><span>يجب إكمال الخطوتين قبل الانتقال.</span></div></>
-                      )}
-                      {currentTaskIndex < gardens.length - 1 && (
-                        <button onClick={goToNextTask} disabled={!currentTaskCompleted}>التالي <ChevronLeft size={19} /></button>
-                      )}
+                      <div className="task-footer-status">
+                        {isSent ? (
+                          <><CheckCircle2 size={24} /><div><strong>تم إرسال هذه المهمة</strong><span>حُفظ التقرير بنجاح.</span></div></>
+                        ) : isReady ? (
+                          <><CheckCircle2 size={24} /><div><strong>اكتملت المهمة بنجاح</strong><span>يمكنك الانتقال للموقع التالي.</span></div></>
+                        ) : (
+                          <><XCircle size={24} /><div><strong>{!hasImages ? "ارفع الصور أولًا" : "احفظ الموقع الآن"}</strong><span>يجب إكمال الخطوتين قبل الانتقال.</span></div></>
+                        )}
+                      </div>
+                      <div className="task-bottom-nav">
+                        <button className="secondary" onClick={goToPreviousTask} disabled={currentTaskIndex === 0}>
+                          <ChevronRight size={19} /> السابق
+                        </button>
+                        {currentTaskIndex < gardens.length - 1 && (
+                          <button onClick={goToNextTask} disabled={!currentTaskCompleted}>التالي <ChevronLeft size={19} /></button>
+                        )}
+                      </div>
                     </footer>
                   </article>
                 );
@@ -838,7 +852,7 @@ export default function ProjectPage() {
                   const isReady = draft?.status === "ready";
                   const isSent = draft?.status === "sent";
                   const statusClass = isSent ? "sent" : isReady ? "ready" : images.length || hasLocation ? "working" : "idle";
-                  const statusText = isSent ? "تم الإرسال" : isReady ? "جاهزة" : images.length || hasLocation ? "جارٍ التجهيز" : "لم تبدأ";
+                  const statusText = isSent ? "✅ تم الإرسال" : isReady ? "🟢 جاهزة" : images.length || hasLocation ? "🟠 جارٍ التنفيذ" : "🔴 لم تبدأ";
                   return (
                     <button key={garden.id} className={`compact-task-row ${statusClass}`} onClick={() => { setCurrentTaskIndex(index); setViewMode("focus"); }}>
                       <span className="compact-task-number">{index + 1}</span>
@@ -874,6 +888,13 @@ export default function ProjectPage() {
             إرسال التقرير
           </button>
         </section>
+      )}
+
+      {previewImage && (
+        <div className="image-lightbox" role="dialog" aria-modal="true" onClick={() => setPreviewImage(null)}>
+          <button className="image-lightbox-close" onClick={() => setPreviewImage(null)} aria-label="إغلاق"><X size={24} /></button>
+          <img src={previewImage} alt="معاينة الصورة بالحجم الكبير" onClick={(event) => event.stopPropagation()} />
+        </div>
       )}
 
       {result && (
