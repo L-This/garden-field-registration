@@ -431,7 +431,7 @@ export default function ProjectPage() {
   };
 
   const readyDrafts = Object.values(drafts).filter(
-    (draft) => draft.status === "ready" || draft.status === "missing-location",
+    (draft) => draft.status === "ready",
   );
   const withImage = Object.values(drafts).reduce(
     (sum, draft) => sum + (draft.imagePreviews?.length || 0),
@@ -443,9 +443,7 @@ export default function ProjectPage() {
   const readyCount = readyDrafts.length;
   const completedCount = Object.values(drafts).filter(
     (draft) =>
-      draft.status === "ready" ||
-      draft.status === "missing-location" ||
-      draft.status === "sent",
+      draft.status === "ready" || draft.status === "sent",
   ).length;
   const remainingCount = Math.max(gardens.length - completedCount, 0);
   const progress = gardens.length
@@ -456,12 +454,12 @@ export default function ProjectPage() {
   const currentDraft = currentGarden ? drafts[currentGarden.id] : undefined;
   const currentTaskCompleted = Boolean(
     currentDraft &&
-    ["ready", "missing-location", "sent"].includes(currentDraft.status),
+    ["ready", "sent"].includes(currentDraft.status),
   );
 
   const goToNextTask = () => {
     if (!currentTaskCompleted) {
-      window.alert("أكمل تجهيز الموقع أولًا برفع الصور وحفظ الموقع.");
+      window.alert("أكمل رفع الصور ثم احفظ الموقع قبل الانتقال.");
       return;
     }
 
@@ -691,7 +689,7 @@ export default function ProjectPage() {
         </section>
       ) : (
         <>
-          <section className="task-view-switcher">
+          <section className="task-view-switcher field-tabs" aria-label="طريقة عرض المهام">
             <button
               className={viewMode === "focus" ? "active" : ""}
               onClick={() => setViewMode("focus")}
@@ -706,274 +704,157 @@ export default function ProjectPage() {
             </button>
           </section>
 
-          {viewMode === "all" && (
-            <section className="toolbar-card contractor-toolbar-card">
-              <div className="manager-static-field">
-                <span>اسم المسؤول</span>
-                <strong>{managerName}</strong>
-              </div>
-
-              <div className="search-field">
-                <Search size={18} />
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="ابحث باسم الموقع أو النطاق"
-                />
-              </div>
-
-              <div className="filter-pills">
-                <button
-                  onClick={() => setFilter("all")}
-                  className={filter === "all" ? "active" : ""}
-                >
-                  الكل
-                </button>
-                <button
-                  onClick={() => setFilter("ready")}
-                  className={filter === "ready" ? "active" : ""}
-                >
-                  جاهزة
-                </button>
-                <button
-                  onClick={() => setFilter("missing")}
-                  className={filter === "missing" ? "active" : ""}
-                >
-                  ناقصة موقع
-                </button>
-                <button
-                  onClick={() => setFilter("empty")}
-                  className={filter === "empty" ? "active" : ""}
-                >
-                  لم تجهز
-                </button>
-              </div>
-            </section>
-          )}
-
           {loadingGardens ? (
             <section className="project-empty-state">
               <Loader2 className="spin" size={30} />
               <h2>جاري تحميل مهام اليوم</h2>
             </section>
-          ) : (
-            <section
-              className={
-                viewMode === "focus" ? "focused-task-area" : "gardens-list-rows"
-              }
-            >
-              {!gardens.length ? (
-                <div className="project-empty-state">
-                  <CheckCircle2 size={34} />
-                  <h2>لا توجد مواقع مجدولة اليوم</h2>
-                  <p>
-                    جدول الري لهذا المشروع لا يحتوي على مهام في يوم {todayLabel}
-                    .
-                  </p>
-                </div>
-              ) : (viewMode === "focus"
-                  ? currentGarden
-                    ? [currentGarden]
-                    : []
-                  : filteredGardens
-                ).length ? (
-                (viewMode === "focus"
-                  ? currentGarden
-                    ? [currentGarden]
-                    : []
-                  : filteredGardens
-                ).map((garden) => {
-                  const draft = drafts[garden.id];
-                  const status = draft?.status || "empty";
-                  const images = draft?.imagePreviews || [];
-                  const mapsUrl = draft?.location
-                    ? `https://www.google.com/maps?q=${draft.location.lat},${draft.location.lng}`
-                    : "";
-
-                  return (
-                    <article
-                      key={garden.id}
-                      className={`garden-row-card ${status} ${viewMode === "focus" ? "focused-garden-card" : ""}`}
-                    >
-                      {viewMode === "focus" && (
-                        <div className="task-navigator">
-                          <div>
-                            <span>
-                              المهمة {currentTaskIndex + 1} من {gardens.length}
-                            </span>
-                            <strong>
-                              {currentTaskCompleted
-                                ? "المهمة جاهزة للإرسال"
-                                : garden.name}
-                            </strong>
-                          </div>
-                          <div className="task-nav-actions">
-                            <button
-                              onClick={goToPreviousTask}
-                              disabled={currentTaskIndex === 0}
-                            >
-                              <ChevronRight size={18} /> السابق
-                            </button>
-                            <button
-                              onClick={goToNextTask}
-                              disabled={
-                                currentTaskIndex >= gardens.length - 1 ||
-                                !currentTaskCompleted
-                              }
-                            >
-                              التالي <ChevronLeft size={18} />
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                      <div className="garden-row-main">
-                        <div className="garden-row-title">
-                          <div className="garden-icon">
-                            <Sprout size={22} />
-                          </div>
-                          <div>
-                            <h3>{garden.name}</h3>
-                            <p>{garden.zone || project.district}</p>
-                          </div>
-                        </div>
-
-                        <div className="garden-row-status">
-                          {status === "ready" && (
-                            <span className="status success">
-                              <CheckCircle2 size={15} /> جاهزة للإرسال
-                            </span>
-                          )}
-                          {status === "missing-location" && (
-                            <span className="status warning">
-                              <MapPin size={15} /> الصور جاهزة والموقع ناقص
-                            </span>
-                          )}
-                          {status === "empty" && (
-                            <span className="status muted">
-                              <XCircle size={15} /> لم يتم التجهيز
-                            </span>
-                          )}
-                          {status === "failed" && (
-                            <span className="status danger">
-                              <XCircle size={15} /> يحتاج مراجعة
-                            </span>
-                          )}
-                          {status === "sent" && (
-                            <span className="status success">
-                              <CheckCircle2 size={15} /> تم إرسال المهمة
-                            </span>
-                          )}
-                          {draft?.note && <small>{draft.note}</small>}
-                        </div>
-                        {viewMode === "focus" && currentTaskCompleted && (
-                          <div className="focused-ready-callout">
-                            <CheckCircle2 size={20} /> جاهزة للإرسال
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="multi-photo-strip">
-                        {images.length ? (
-                          images.map((src, index) => (
-                            <div
-                              className="multi-photo-item"
-                              key={`${garden.id}-${index}`}
-                            >
-                              <img
-                                src={src}
-                                alt={`${garden.name} ${index + 1}`}
-                              />
-                              <button
-                                onClick={() => removeImage(garden.id, index)}
-                                title="حذف الصورة"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="empty-photo-row">
-                            <ImageIcon size={28} />
-                            <span>لا توجد صور</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="garden-row-actions">
-                        <label className="action-btn upload">
-                          <Camera size={17} />
-                          رفع صور
-                          <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={(e) =>
-                              handleImages(garden.id, e.target.files)
-                            }
-                          />
-                        </label>
-
-                        <button
-                          className="action-btn location"
-                          onClick={() => handleLocation(garden.id)}
-                        >
-                          <LocateFixed size={17} />
-                          {draft?.location ? "تحديث الموقع" : "جلب الموقع"}
-                        </button>
-
-                        {mapsUrl ? (
-                          <a
-                            href={mapsUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="row-map-link"
-                          >
-                            فتح الموقع
-                          </a>
-                        ) : (
-                          <span className="row-map-muted">
-                            الموقع غير محفوظ
-                          </span>
-                        )}
-                        {draft && (
-                          <button
-                            className="row-clear-btn"
-                            onClick={() => clearGarden(garden.id)}
-                          >
-                            مسح
-                          </button>
-                        )}
-                        {viewMode === "focus" &&
-                          currentTaskIndex < gardens.length - 1 && (
-                            <button
-                              className="next-task-primary"
-                              onClick={goToNextTask}
-                              disabled={!currentTaskCompleted}
-                            >
-                              الانتقال للمهمة التالية <ChevronLeft size={18} />
-                            </button>
-                          )}
-                        {viewMode === "focus" && !currentTaskCompleted && (
-                          <small className="next-task-hint">
-                            أكمل رفع الصور وحفظ الموقع لتفعيل الانتقال.
-                          </small>
-                        )}
-                      </div>
-                    </article>
-                  );
-                })
-              ) : (
-                <div className="project-empty-state">
-                  <Search size={30} />
-                  <h2>لا توجد نتائج مطابقة</h2>
-                  <p>غيّر عبارة البحث أو اختر مرشحًا آخر.</p>
-                </div>
-              )}
+          ) : !gardens.length ? (
+            <section className="project-empty-state">
+              <CheckCircle2 size={34} />
+              <h2>لا توجد مواقع مجدولة اليوم</h2>
+              <p>جدول الري لهذا المشروع لا يحتوي على مهام في يوم {todayLabel}.</p>
             </section>
+          ) : viewMode === "focus" && currentGarden ? (
+            <section className="field-task-shell">
+              <header className="field-task-heading">
+                <div>
+                  <span>المهمة الحالية</span>
+                  <strong>{currentTaskIndex + 1} / {gardens.length}</strong>
+                </div>
+                <div className="task-nav-actions">
+                  <button onClick={goToPreviousTask} disabled={currentTaskIndex === 0}>
+                    <ChevronRight size={18} /> السابق
+                  </button>
+                  <button onClick={goToNextTask} disabled={!currentTaskCompleted || currentTaskIndex >= gardens.length - 1}>
+                    التالي <ChevronLeft size={18} />
+                  </button>
+                </div>
+              </header>
+
+              {(() => {
+                const garden = currentGarden;
+                const draft = drafts[garden.id];
+                const images = draft?.imagePreviews || [];
+                const hasImages = images.length > 0;
+                const hasLocation = Boolean(draft?.location);
+                const isReady = draft?.status === "ready";
+                const isSent = draft?.status === "sent";
+                const mapsUrl = draft?.location ? `https://www.google.com/maps?q=${draft.location.lat},${draft.location.lng}` : "";
+                const stageLabel = isSent ? "تم الإرسال" : isReady ? "جاهزة للإرسال" : hasImages || hasLocation ? "جارٍ التجهيز" : "لم تبدأ";
+                const stageClass = isSent ? "sent" : isReady ? "ready" : hasImages || hasLocation ? "working" : "idle";
+
+                return (
+                  <article className={`field-task-card ${stageClass}`}>
+                    <div className="field-task-title">
+                      <div className="task-location-icon"><MapPin size={30} /></div>
+                      <div>
+                        <small>{project.district}</small>
+                        <h2>{garden.name}</h2>
+                      </div>
+                      <span className={`task-stage ${stageClass}`}>{stageLabel}</span>
+                    </div>
+
+                    <div className="task-checklist">
+                      <div className={hasImages ? "done" : ""}>
+                        <span><Camera size={20} /></span>
+                        <strong>الصور</strong>
+                        <small>{hasImages ? `${images.length} صورة محفوظة` : "لم تُرفع بعد"}</small>
+                      </div>
+                      <div className={hasLocation ? "done" : ""}>
+                        <span><LocateFixed size={20} /></span>
+                        <strong>الموقع</strong>
+                        <small>{hasLocation ? "تم حفظ الموقع" : "لم يُحفظ بعد"}</small>
+                      </div>
+                    </div>
+
+                    <div className="task-proof-area">
+                      {images.length ? images.map((src, index) => (
+                        <div className="task-proof-thumb" key={`${garden.id}-${index}`}>
+                          <img src={src} alt={`${garden.name} ${index + 1}`} />
+                          <button onClick={() => removeImage(garden.id, index)} title="حذف الصورة"><Trash2 size={15} /></button>
+                        </div>
+                      )) : (
+                        <div className="task-proof-empty"><ImageIcon size={38} /><strong>لا توجد صور بعد</strong><span>ارفع صورة أو أكثر لإثبات تنفيذ المهمة</span></div>
+                      )}
+                    </div>
+
+                    <div className="field-action-grid">
+                      <label className="field-big-action primary">
+                        <Camera size={23} />
+                        <span><strong>رفع الصور</strong><small>يمكن اختيار أكثر من صورة</small></span>
+                        <input type="file" accept="image/*" multiple onChange={(e) => handleImages(garden.id, e.target.files)} />
+                      </label>
+                      <button className="field-big-action" onClick={() => handleLocation(garden.id)}>
+                        <LocateFixed size={23} />
+                        <span><strong>{hasLocation ? "تحديث الموقع" : "حفظ الموقع"}</strong><small>{hasLocation ? "الموقع محفوظ ويمكن تحديثه" : "استخدم موقع الجهاز الحالي"}</small></span>
+                      </button>
+                    </div>
+
+                    {mapsUrl && <a className="field-map-link" href={mapsUrl} target="_blank" rel="noreferrer">فتح الموقع على الخريطة</a>}
+                    {draft?.note && <p className="field-task-note">{draft.note}</p>}
+
+                    <footer className={`field-task-footer ${isReady || isSent ? "complete" : ""}`}>
+                      {isSent ? (
+                        <><CheckCircle2 size={24} /><div><strong>تم إرسال هذه المهمة</strong><span>حُفظ التقرير بنجاح.</span></div></>
+                      ) : isReady ? (
+                        <><CheckCircle2 size={24} /><div><strong>تم تجهيز الموقع</strong><span>الصور والموقع مكتملان.</span></div></>
+                      ) : (
+                        <><XCircle size={24} /><div><strong>{!hasImages ? "ارفع الصور أولًا" : "احفظ الموقع الآن"}</strong><span>يجب إكمال الخطوتين قبل الانتقال.</span></div></>
+                      )}
+                      {currentTaskIndex < gardens.length - 1 && (
+                        <button onClick={goToNextTask} disabled={!currentTaskCompleted}>التالي <ChevronLeft size={19} /></button>
+                      )}
+                    </footer>
+                  </article>
+                );
+              })()}
+            </section>
+          ) : (
+            <>
+              <section className="compact-task-toolbar">
+                <div>
+                  <strong>{filteredGardens.length} مهمة</strong>
+                  <span>اضغط على أي مهمة لفتحها</span>
+                </div>
+                <div className="search-field">
+                  <Search size={18} />
+                  <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحث باسم الموقع" />
+                </div>
+                <div className="filter-pills compact">
+                  <button onClick={() => setFilter("all")} className={filter === "all" ? "active" : ""}>الكل</button>
+                  <button onClick={() => setFilter("ready")} className={filter === "ready" ? "active" : ""}>جاهزة</button>
+                  <button onClick={() => setFilter("missing")} className={filter === "missing" ? "active" : ""}>جارٍ التجهيز</button>
+                  <button onClick={() => setFilter("empty")} className={filter === "empty" ? "active" : ""}>لم تبدأ</button>
+                </div>
+              </section>
+
+              <section className="compact-task-list">
+                {filteredGardens.length ? filteredGardens.map((garden) => {
+                  const index = gardens.findIndex((item) => item.id === garden.id);
+                  const draft = drafts[garden.id];
+                  const images = draft?.imagePreviews || [];
+                  const hasLocation = Boolean(draft?.location);
+                  const isReady = draft?.status === "ready";
+                  const isSent = draft?.status === "sent";
+                  const statusClass = isSent ? "sent" : isReady ? "ready" : images.length || hasLocation ? "working" : "idle";
+                  const statusText = isSent ? "تم الإرسال" : isReady ? "جاهزة" : images.length || hasLocation ? "جارٍ التجهيز" : "لم تبدأ";
+                  return (
+                    <button key={garden.id} className={`compact-task-row ${statusClass}`} onClick={() => { setCurrentTaskIndex(index); setViewMode("focus"); }}>
+                      <span className="compact-task-number">{index + 1}</span>
+                      <span className="compact-task-copy"><strong>{garden.name}</strong><small>{project.district}</small></span>
+                      <span className={`compact-task-status ${statusClass}`}>{statusText}</span>
+                      <ChevronLeft size={20} />
+                    </button>
+                  );
+                }) : (
+                  <div className="project-empty-state"><Search size={30} /><h2>لا توجد نتائج مطابقة</h2><p>غيّر عبارة البحث أو اختر مرشحًا آخر.</p></div>
+                )}
+              </section>
+            </>
           )}
         </>
       )}
-
       {!allTasksCompleted && (
         <section className="submit-dock">
           <div>
