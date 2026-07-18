@@ -2832,3 +2832,42 @@ button {
   .lightbox-counter { top: 16px; }
   .lightbox-delete { bottom: 14px; }
 }
+
+/* Final field-flow polish */
+.tasks-overview-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.metric.duration span { display: inline-flex; align-items: center; gap: 6px; }
+.metric.duration strong { font-variant-numeric: tabular-nums; color: #475569; }
+.completion-actions { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+.completion-return-button,
+.completion-back-projects {
+  min-height: 58px; padding: 0 24px; border-radius: 18px; border: 1px solid rgba(5, 150, 105, .28);
+  background: rgba(255,255,255,.88); color: #067052; font-weight: 900; display: inline-flex; align-items: center;
+  justify-content: center; gap: 9px; text-decoration: none; cursor: pointer;
+}
+.completion-return-button:hover,
+.completion-back-projects:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(5, 105, 80, .12); }
+.completion-return-button:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+.completion-summary-grid.sent-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.trophy-icon { background: linear-gradient(145deg, #f59e0b, #d97706) !important; color: #fff; }
+.completion-screen { position: relative; overflow: hidden; }
+.completion-confetti i { position: absolute; width: 8px; height: 16px; border-radius: 4px; animation: completionConfetti 1.6s ease-out both; }
+.completion-confetti i:nth-child(1) { left: 20%; top: 8%; background:#10b981; transform:rotate(18deg); }
+.completion-confetti i:nth-child(2) { left: 32%; top: 4%; background:#f59e0b; animation-delay:.08s; }
+.completion-confetti i:nth-child(3) { right: 22%; top: 7%; background:#2563eb; animation-delay:.16s; }
+.completion-confetti i:nth-child(4) { right: 34%; top: 2%; background:#ec4899; animation-delay:.22s; }
+.completion-confetti i:nth-child(5) { left: 12%; top: 20%; background:#8b5cf6; animation-delay:.12s; }
+.completion-confetti i:nth-child(6) { right: 12%; top: 19%; background:#14b8a6; animation-delay:.2s; }
+@keyframes completionConfetti { 0% { opacity:0; translate:0 -20px; scale:.4; } 35% { opacity:1; } 100% { opacity:0; translate:0 150px; rotate:180deg; } }
+.field-big-action strong { transition: transform .2s ease, color .2s ease; }
+.upload-pulse strong { transform: scale(1.04); }
+.task-transition-overlay > div { animation: taskTransitionCard .48s ease both; }
+@keyframes taskTransitionCard { from { opacity:0; transform:scale(.92) translateY(15px); } to { opacity:1; transform:none; } }
+.field-task-card { animation: fieldTaskFade .34s ease both; }
+@keyframes fieldTaskFade { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+.progress-ratio, .field-task-heading strong, .mini-progress-wrap bdi { unicode-bidi: isolate; }
+@media (max-width: 850px) {
+  .tasks-overview-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .completion-summary-grid.sent-summary { grid-template-columns: 1fr; }
+  .completion-actions { width: 100%; }
+  .completion-actions > * { width: 100%; }
+}

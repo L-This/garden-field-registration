@@ -23,6 +23,9 @@ import {
   List,
   Focus,
   PartyPopper,
+  Trophy,
+  Undo2,
+  Clock3,
   MapPin,
   Search,
   ShieldCheck,
@@ -160,6 +163,12 @@ export default function ProjectPage() {
     null,
   );
   const [isAdvancing, setIsAdvancing] = useState(false);
+  const [taskStartedAt, setTaskStartedAt] = useState<number | null>(null);
+  const [submittedAt, setSubmittedAt] = useState<Date | null>(null);
+  const [imageSuccessGardenId, setImageSuccessGardenId] = useState<string | null>(null);
+  const [locationSuccessGardenId, setLocationSuccessGardenId] = useState<string | null>(null);
+  const [reviewAfterCompletion, setReviewAfterCompletion] = useState(false);
+  const [, setClockTick] = useState(0);
   const lightboxTouchStartX = useRef<number | null>(null);
 
   useEffect(() => {
@@ -255,6 +264,21 @@ export default function ProjectPage() {
 
     setCurrentTaskIndex((index) => Math.min(index, gardens.length - 1));
   }, [gardens.length]);
+
+  useEffect(() => {
+    if (!isUnlocked || !gardens.length || taskStartedAt) return;
+    const storageKey = `field-start-${projectId}-${getRiyadhDayColumn()}`;
+    const savedStart = Number(sessionStorage.getItem(storageKey));
+    const start = Number.isFinite(savedStart) && savedStart > 0 ? savedStart : Date.now();
+    if (!savedStart) sessionStorage.setItem(storageKey, String(start));
+    setTaskStartedAt(start);
+  }, [isUnlocked, gardens.length, projectId, taskStartedAt]);
+
+  useEffect(() => {
+    if (!taskStartedAt || submittedAt) return;
+    const timer = window.setInterval(() => setClockTick((value) => value + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, [taskStartedAt, submittedAt]);
 
   async function loadGardens(projectDbId: string) {
     setLoadingGardens(true);
@@ -391,6 +415,8 @@ export default function ProjectPage() {
       note: `✓ تم رفع ${nextImages.length} ${nextImages.length === 1 ? "صورة" : "صور"}`,
     });
     setUploadPulseGardenId(gardenId);
+    setImageSuccessGardenId(gardenId);
+    window.setTimeout(() => setImageSuccessGardenId((current) => current === gardenId ? null : current), 1100);
     window.setTimeout(
       () =>
         setUploadPulseGardenId((current) =>
@@ -436,6 +462,8 @@ export default function ProjectPage() {
           },
           note: "📍 تم تحديد الموقع بدقة",
         });
+        setLocationSuccessGardenId(gardenId);
+        window.setTimeout(() => setLocationSuccessGardenId((current) => current === gardenId ? null : current), 1100);
       },
       () => {
         updateDraft(gardenId, {
@@ -474,6 +502,13 @@ export default function ProjectPage() {
     ? Math.round((completedCount / gardens.length) * 100)
     : 0;
   const allTasksCompleted = gardens.length > 0 && remainingCount === 0;
+  const elapsedSeconds = taskStartedAt
+    ? Math.max(0, Math.floor(((submittedAt?.getTime() || Date.now()) - taskStartedAt) / 1000))
+    : 0;
+  const elapsedLabel = `${String(Math.floor(elapsedSeconds / 60)).padStart(2, "0")}:${String(elapsedSeconds % 60).padStart(2, "0")}`;
+  const submittedTimeLabel = submittedAt
+    ? new Intl.DateTimeFormat("ar-SA", { timeZone: RIYADH_TIME_ZONE, hour: "2-digit", minute: "2-digit" }).format(submittedAt)
+    : "";
   const currentGarden = gardens[currentTaskIndex];
   const currentDraft = currentGarden ? drafts[currentGarden.id] : undefined;
   const currentTaskCompleted = Boolean(
@@ -543,6 +578,8 @@ export default function ProjectPage() {
       setResult(response);
 
       if (response.ok && response.sent) {
+        setSubmittedAt(new Date());
+        setReviewAfterCompletion(false);
         const submittedIds = new Set(
           readyDrafts.map((draft) => draft.gardenId),
         );
@@ -675,6 +712,10 @@ export default function ProjectPage() {
             <span>📷 الصور</span>
             <strong>{withImage}</strong>
           </div>
+          <div className="metric duration">
+            <span><Clock3 size={17} /> الوقت</span>
+            <strong>{elapsedLabel}</strong>
+          </div>
         </div>
       </section>
 
@@ -697,7 +738,7 @@ export default function ProjectPage() {
         </div>
       </section>
 
-      {allTasksCompleted ? (
+      {allTasksCompleted && !reviewAfterCompletion ? (
         result?.ok ? (
           <section className="daily-completion-banner celebration-banner completion-screen sent-success-screen">
             <div className="completion-icon">
@@ -705,16 +746,25 @@ export default function ProjectPage() {
             </div>
             <div className="completion-copy">
               <span className="celebration-label">تم بنجاح</span>
-              <strong>تم إرسال تقرير اليوم</strong>
+              <strong>تم إرسال تقرير اليوم بنجاح</strong>
+              <div className="completion-summary-grid sent-summary">
+                <div><MapPin size={22} /><span>عدد المواقع</span><strong>{gardens.length}</strong></div>
+                <div><Camera size={22} /><span>عدد الصور</span><strong>{withImage}</strong></div>
+                <div><Clock3 size={22} /><span>وقت الإرسال</span><strong>{submittedTimeLabel}</strong></div>
+              </div>
               <p>شكرًا لك</p>
               <small>تم حفظ جميع المهام والصور والمواقع بنجاح.</small>
             </div>
+            <Link href="/" className="completion-back-projects">
+              <ArrowLeft size={19} /> العودة للمشاريع
+            </Link>
           </section>
         ) : (
           <section className="daily-completion-banner celebration-banner completion-screen">
-            <div className="completion-icon">
-              <PartyPopper size={42} />
+            <div className="completion-icon trophy-icon">
+              <Trophy size={42} />
             </div>
+            <div className="completion-confetti" aria-hidden="true"><i/><i/><i/><i/><i/><i/></div>
             <div className="completion-copy">
               <span className="celebration-label">أحسنت</span>
               <strong>تم الانتهاء من جميع المواقع</strong>
@@ -732,23 +782,42 @@ export default function ProjectPage() {
                   <span>المواقع</span>
                   <strong>{withLocation}</strong>
                 </div>
+                <div>
+                  <Clock3 size={22} />
+                  <span>الوقت المستغرق</span>
+                  <strong>{elapsedLabel}</strong>
+                </div>
               </div>
               <small>
                 تم تجهيز جميع المواقع، ويمكنك الآن إرسال تقرير اليوم.
               </small>
             </div>
-            <button
-              className="completion-submit-button"
-              onClick={submitReport}
-              disabled={loading || !readyCount}
-            >
-              {loading ? (
-                <Loader2 className="spin" size={19} />
-              ) : (
-                <CloudUpload size={19} />
-              )}
-              إرسال تقرير اليوم
-            </button>
+            <div className="completion-actions">
+              <button
+                className="completion-return-button"
+                onClick={() => {
+                  setCurrentTaskIndex(Math.max(gardens.length - 1, 0));
+                  setViewMode("focus");
+                  setReviewAfterCompletion(true);
+                  scrollToCurrentTask();
+                }}
+                disabled={loading}
+              >
+                <Undo2 size={19} /> العودة للمهمة الأخيرة
+              </button>
+              <button
+                className="completion-submit-button"
+                onClick={submitReport}
+                disabled={loading || !readyCount}
+              >
+                {loading ? (
+                  <Loader2 className="spin" size={19} />
+                ) : (
+                  <CloudUpload size={19} />
+                )}
+                إرسال تقرير اليوم
+              </button>
+            </div>
           </section>
         )
       ) : (
@@ -789,7 +858,7 @@ export default function ProjectPage() {
               <header className="field-task-heading">
                 <div>
                   <span>المهمة الحالية</span>
-                  <strong>
+                  <strong dir="ltr">
                     {currentTaskIndex + 1} / {gardens.length}
                   </strong>
                 </div>
@@ -807,7 +876,7 @@ export default function ProjectPage() {
                   <small>
                     الإنجاز
                     <br />
-                    {completedCount} / {gardens.length}
+                    <bdi dir="ltr">{completedCount} / {gardens.length}</bdi>
                   </small>
                 </div>
               </header>
@@ -925,9 +994,11 @@ export default function ProjectPage() {
                         <Camera size={23} />
                         <span>
                           <strong>
-                            {hasImages
-                              ? `✓ ${images.length} ${images.length === 1 ? "صورة" : "صور"}`
-                              : "رفع الصور"}
+                            {imageSuccessGardenId === garden.id
+                              ? "✓ تم رفع الصورة"
+                              : hasImages
+                                ? `✓ ${images.length} ${images.length === 1 ? "صورة" : "صور"}`
+                                : "رفع الصور"}
                           </strong>
                           <small>
                             {hasImages
@@ -951,7 +1022,9 @@ export default function ProjectPage() {
                         <LocateFixed size={23} />
                         <span>
                           <strong>
-                            {hasLocation ? "إعادة تحديد الموقع" : "حفظ الموقع"}
+                            {locationSuccessGardenId === garden.id
+                              ? "✓ حُفظ بنجاح"
+                              : hasLocation ? "إعادة تحديد الموقع" : "حفظ الموقع"}
                           </strong>
                           <small>
                             {hasLocation
@@ -1018,14 +1091,18 @@ export default function ProjectPage() {
                         >
                           <ChevronRight size={19} /> السابق
                         </button>
-                        {currentTaskIndex < gardens.length - 1 && (
+                        {currentTaskIndex < gardens.length - 1 ? (
                           <button
                             onClick={goToNextTask}
                             disabled={!currentTaskCompleted}
                           >
                             التالي <ChevronLeft size={19} />
                           </button>
-                        )}
+                        ) : currentTaskCompleted && allTasksCompleted ? (
+                          <button onClick={() => { setReviewAfterCompletion(false); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+                            ملخص الإرسال <CloudUpload size={19} />
+                          </button>
+                        ) : null}
                       </div>
                     </footer>
                   </article>
