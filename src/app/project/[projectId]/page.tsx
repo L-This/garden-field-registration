@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { useParams } from "next/navigation";
 import {
   ArrowLeft,
@@ -146,7 +152,15 @@ export default function ProjectPage() {
   const [result, setResult] = useState<FieldSubmitResult | null>(null);
   const [viewMode, setViewMode] = useState<"focus" | "all">("focus");
   const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<{
+    gardenId: string;
+    index: number;
+  } | null>(null);
+  const [uploadPulseGardenId, setUploadPulseGardenId] = useState<string | null>(
+    null,
+  );
+  const [isAdvancing, setIsAdvancing] = useState(false);
+  const lightboxTouchStartX = useRef<number | null>(null);
 
   useEffect(() => {
     async function loadProject() {
@@ -374,8 +388,16 @@ export default function ProjectPage() {
     updateDraft(gardenId, {
       imagePreviews: nextImages,
       imagePreview: nextImages[0],
-      note: `تم تجهيز ${nextImages.length} صورة`,
+      note: `✓ تم رفع ${nextImages.length} ${nextImages.length === 1 ? "صورة" : "صور"}`,
     });
+    setUploadPulseGardenId(gardenId);
+    window.setTimeout(
+      () =>
+        setUploadPulseGardenId((current) =>
+          current === gardenId ? null : current,
+        ),
+      650,
+    );
   };
 
   const removeImage = (gardenId: string, imageIndex: number) => {
@@ -412,7 +434,7 @@ export default function ProjectPage() {
             lng: position.coords.longitude,
             accuracy: position.coords.accuracy,
           },
-          note: "تم حفظ الموقع",
+          note: "📍 تم تحديد الموقع بدقة",
         });
       },
       () => {
@@ -445,8 +467,7 @@ export default function ProjectPage() {
   ).length;
   const readyCount = readyDrafts.length;
   const completedCount = Object.values(drafts).filter(
-    (draft) =>
-      draft.status === "ready" || draft.status === "sent",
+    (draft) => draft.status === "ready" || draft.status === "sent",
   ).length;
   const remainingCount = Math.max(gardens.length - completedCount, 0);
   const progress = gardens.length
@@ -456,8 +477,7 @@ export default function ProjectPage() {
   const currentGarden = gardens[currentTaskIndex];
   const currentDraft = currentGarden ? drafts[currentGarden.id] : undefined;
   const currentTaskCompleted = Boolean(
-    currentDraft &&
-    ["ready", "sent"].includes(currentDraft.status),
+    currentDraft && ["ready", "sent"].includes(currentDraft.status),
   );
 
   const scrollToCurrentTask = () => {
@@ -474,10 +494,13 @@ export default function ProjectPage() {
       return;
     }
 
-    setCurrentTaskIndex((index) =>
-      Math.min(index + 1, Math.max(gardens.length - 1, 0)),
-    );
-    scrollToCurrentTask();
+    if (currentTaskIndex >= gardens.length - 1) return;
+    setIsAdvancing(true);
+    window.setTimeout(() => {
+      setCurrentTaskIndex((index) => Math.min(index + 1, gardens.length - 1));
+      setIsAdvancing(false);
+      scrollToCurrentTask();
+    }, 520);
   };
 
   const goToPreviousTask = () => {
@@ -675,32 +698,65 @@ export default function ProjectPage() {
       </section>
 
       {allTasksCompleted ? (
-        <section className="daily-completion-banner celebration-banner completion-screen">
-          <div className="completion-icon">
-            <PartyPopper size={42} />
-          </div>
-          <div className="completion-copy">
-            <span className="celebration-label">أحسنت</span>
-            <strong>تم إنهاء جميع مهام اليوم</strong>
-            <p>{completedCount} من {gardens.length}</p>
-            <small>تم تجهيز جميع المواقع، ويمكنك الآن إرسال التقرير.</small>
-          </div>
-          <button
-            className="completion-submit-button"
-            onClick={submitReport}
-            disabled={loading || !readyCount}
-          >
-            {loading ? (
-              <Loader2 className="spin" size={19} />
-            ) : (
-              <CloudUpload size={19} />
-            )}
-            إرسال التقرير
-          </button>
-        </section>
+        result?.ok ? (
+          <section className="daily-completion-banner celebration-banner completion-screen sent-success-screen">
+            <div className="completion-icon">
+              <CheckCircle2 size={46} />
+            </div>
+            <div className="completion-copy">
+              <span className="celebration-label">تم بنجاح</span>
+              <strong>تم إرسال تقرير اليوم</strong>
+              <p>شكرًا لك</p>
+              <small>تم حفظ جميع المهام والصور والمواقع بنجاح.</small>
+            </div>
+          </section>
+        ) : (
+          <section className="daily-completion-banner celebration-banner completion-screen">
+            <div className="completion-icon">
+              <PartyPopper size={42} />
+            </div>
+            <div className="completion-copy">
+              <span className="celebration-label">أحسنت</span>
+              <strong>تم الانتهاء من جميع المواقع</strong>
+              <p>
+                {completedCount} / {gardens.length}
+              </p>
+              <div className="completion-summary-grid">
+                <div>
+                  <Camera size={22} />
+                  <span>الصور</span>
+                  <strong>{withImage}</strong>
+                </div>
+                <div>
+                  <MapPin size={22} />
+                  <span>المواقع</span>
+                  <strong>{withLocation}</strong>
+                </div>
+              </div>
+              <small>
+                تم تجهيز جميع المواقع، ويمكنك الآن إرسال تقرير اليوم.
+              </small>
+            </div>
+            <button
+              className="completion-submit-button"
+              onClick={submitReport}
+              disabled={loading || !readyCount}
+            >
+              {loading ? (
+                <Loader2 className="spin" size={19} />
+              ) : (
+                <CloudUpload size={19} />
+              )}
+              إرسال تقرير اليوم
+            </button>
+          </section>
+        )
       ) : (
         <>
-          <section className="task-view-switcher field-tabs" aria-label="طريقة عرض المهام">
+          <section
+            className="task-view-switcher field-tabs"
+            aria-label="طريقة عرض المهام"
+          >
             <button
               className={viewMode === "focus" ? "active" : ""}
               onClick={() => setViewMode("focus")}
@@ -724,16 +780,36 @@ export default function ProjectPage() {
             <section className="project-empty-state">
               <CheckCircle2 size={34} />
               <h2>لا توجد مواقع مجدولة اليوم</h2>
-              <p>جدول الري لهذا المشروع لا يحتوي على مهام في يوم {todayLabel}.</p>
+              <p>
+                جدول الري لهذا المشروع لا يحتوي على مهام في يوم {todayLabel}.
+              </p>
             </section>
           ) : viewMode === "focus" && currentGarden ? (
             <section className="field-task-shell" id="current-field-task">
               <header className="field-task-heading">
                 <div>
                   <span>المهمة الحالية</span>
-                  <strong>{currentTaskIndex + 1} / {gardens.length}</strong>
+                  <strong>
+                    {currentTaskIndex + 1} / {gardens.length}
+                  </strong>
                 </div>
-                <small>الإنجاز: {completedCount} / {gardens.length} ({progress}%)</small>
+                <div className="mini-progress-wrap">
+                  <div
+                    className="mini-progress-ring"
+                    style={
+                      {
+                        "--progress": `${progress * 3.6}deg`,
+                      } as CSSProperties
+                    }
+                  >
+                    <span>{progress}%</span>
+                  </div>
+                  <small>
+                    الإنجاز
+                    <br />
+                    {completedCount} / {gardens.length}
+                  </small>
+                </div>
               </header>
 
               {(() => {
@@ -744,79 +820,211 @@ export default function ProjectPage() {
                 const hasLocation = Boolean(draft?.location);
                 const isReady = draft?.status === "ready";
                 const isSent = draft?.status === "sent";
-                const mapsUrl = draft?.location ? `https://www.google.com/maps?q=${draft.location.lat},${draft.location.lng}` : "";
-                const stageLabel = isSent ? "✅ تم الإرسال" : isReady ? "🟢 جاهزة للإرسال" : hasImages || hasLocation ? "🟠 جارٍ التنفيذ" : "🔴 لم تبدأ";
-                const stageClass = isSent ? "sent" : isReady ? "ready" : hasImages || hasLocation ? "working" : "idle";
+                const mapsUrl = draft?.location
+                  ? `https://www.google.com/maps?q=${draft.location.lat},${draft.location.lng}`
+                  : "";
+                const stageLabel = isSent
+                  ? "✅ تم الإرسال"
+                  : isReady
+                    ? "🟢 جاهزة للإرسال"
+                    : hasImages || hasLocation
+                      ? "🟠 جارٍ التنفيذ"
+                      : "🔴 لم تبدأ";
+                const stageClass = isSent
+                  ? "sent"
+                  : isReady
+                    ? "ready"
+                    : hasImages || hasLocation
+                      ? "working"
+                      : "idle";
 
                 return (
                   <article className={`field-task-card ${stageClass}`}>
                     <div className="field-task-title">
-                      <div className="task-location-icon"><MapPin size={30} /></div>
+                      <div className="task-location-icon">
+                        <MapPin size={30} />
+                      </div>
                       <div>
                         <small>{project.district}</small>
                         <h2>{garden.name}</h2>
                       </div>
-                      <span className={`task-stage ${stageClass}`}>{stageLabel}</span>
+                      <span className={`task-stage ${stageClass}`}>
+                        {stageLabel}
+                      </span>
                     </div>
 
                     <div className="task-checklist">
                       <div className={hasImages ? "done" : ""}>
-                        <span><Camera size={20} /></span>
+                        <span>
+                          <Camera size={20} />
+                        </span>
                         <strong>الصور</strong>
-                        <small>{hasImages ? `📷 ${images.length} صورة مرفوعة` : "لم تُرفع بعد"}</small>
+                        <small>
+                          {hasImages
+                            ? `📷 ${images.length} صورة مرفوعة`
+                            : "لم تُرفع بعد"}
+                        </small>
                       </div>
                       <div className={hasLocation ? "done" : ""}>
-                        <span><LocateFixed size={20} /></span>
+                        <span>
+                          <LocateFixed size={20} />
+                        </span>
                         <strong>الموقع</strong>
-                        <small>{hasLocation ? "تم حفظ الموقع" : "لم يُحفظ بعد"}</small>
+                        <small>
+                          {hasLocation
+                            ? "تم تحديد الموقع بدقة"
+                            : "لم يُحفظ بعد"}
+                        </small>
                       </div>
                     </div>
 
                     <div className="task-proof-area">
-                      {images.length ? images.map((src, index) => (
-                        <div className="task-proof-thumb" key={`${garden.id}-${index}`}>
-                          <button className="task-proof-open" onClick={() => setPreviewImage(src)} title="تكبير الصورة">
-                            <img src={src} alt={`${garden.name} ${index + 1}`} />
-                            <span><ZoomIn size={18} /> تكبير</span>
-                          </button>
-                          <button className="task-proof-delete" onClick={() => removeImage(garden.id, index)} title="حذف الصورة"><Trash2 size={15} /></button>
+                      {images.length ? (
+                        images.map((src, index) => (
+                          <div
+                            className="task-proof-thumb"
+                            key={`${garden.id}-${index}`}
+                          >
+                            <button
+                              className="task-proof-open"
+                              onClick={() =>
+                                setPreviewImage({ gardenId: garden.id, index })
+                              }
+                              title="تكبير الصورة"
+                            >
+                              <img
+                                src={src}
+                                alt={`${garden.name} ${index + 1}`}
+                              />
+                              <span>
+                                <ZoomIn size={18} /> تكبير
+                              </span>
+                            </button>
+                            <button
+                              className="task-proof-delete"
+                              onClick={() => removeImage(garden.id, index)}
+                              title="حذف الصورة"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="task-proof-empty">
+                          <ImageIcon size={38} />
+                          <strong>لا توجد صور بعد</strong>
+                          <span>ارفع صورة أو أكثر لإثبات تنفيذ المهمة</span>
                         </div>
-                      )) : (
-                        <div className="task-proof-empty"><ImageIcon size={38} /><strong>لا توجد صور بعد</strong><span>ارفع صورة أو أكثر لإثبات تنفيذ المهمة</span></div>
                       )}
                     </div>
 
                     <div className="field-action-grid">
-                      <label className="field-big-action primary">
+                      <label
+                        className={`field-big-action primary ${uploadPulseGardenId === garden.id ? "upload-pulse" : ""}`}
+                      >
                         <Camera size={23} />
-                        <span><strong>رفع الصور</strong><small>يمكن اختيار أكثر من صورة</small></span>
-                        <input type="file" accept="image/*" multiple onChange={(e) => handleImages(garden.id, e.target.files)} />
+                        <span>
+                          <strong>
+                            {hasImages
+                              ? `✓ ${images.length} ${images.length === 1 ? "صورة" : "صور"}`
+                              : "رفع الصور"}
+                          </strong>
+                          <small>
+                            {hasImages
+                              ? "يمكن إضافة صور أخرى"
+                              : "يمكن اختيار أكثر من صورة"}
+                          </small>
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={(e) =>
+                            handleImages(garden.id, e.target.files)
+                          }
+                        />
                       </label>
-                      <button className="field-big-action" onClick={() => handleLocation(garden.id)}>
+                      <button
+                        className="field-big-action"
+                        onClick={() => handleLocation(garden.id)}
+                      >
                         <LocateFixed size={23} />
-                        <span><strong>{hasLocation ? "إعادة تحديد الموقع" : "حفظ الموقع"}</strong><small>{hasLocation ? "الموقع محفوظ ويمكن تحديده من جديد" : "استخدم موقع الجهاز الحالي"}</small></span>
+                        <span>
+                          <strong>
+                            {hasLocation ? "إعادة تحديد الموقع" : "حفظ الموقع"}
+                          </strong>
+                          <small>
+                            {hasLocation
+                              ? "الموقع محفوظ ويمكن تحديده من جديد"
+                              : "استخدم موقع الجهاز الحالي"}
+                          </small>
+                        </span>
                       </button>
                     </div>
 
-                    {mapsUrl && <a className="field-map-link" href={mapsUrl} target="_blank" rel="noreferrer">فتح الموقع على الخريطة</a>}
-                    {draft?.note && <p className="field-task-note">{draft.note}</p>}
+                    {mapsUrl && (
+                      <a
+                        className="field-map-link"
+                        href={mapsUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        فتح الموقع على الخريطة
+                      </a>
+                    )}
+                    {draft?.note && (
+                      <p className="field-task-note">{draft.note}</p>
+                    )}
 
-                    <footer className={`field-task-footer ${isReady || isSent ? "complete" : ""}`}>
+                    <footer
+                      className={`field-task-footer ${isReady || isSent ? "complete" : ""}`}
+                    >
                       <div className="task-footer-status">
                         {isSent ? (
-                          <><CheckCircle2 size={24} /><div><strong>تم إرسال هذه المهمة</strong><span>حُفظ التقرير بنجاح.</span></div></>
+                          <>
+                            <CheckCircle2 size={24} />
+                            <div>
+                              <strong>تم إرسال هذه المهمة</strong>
+                              <span>حُفظ التقرير بنجاح.</span>
+                            </div>
+                          </>
                         ) : isReady ? (
-                          <><CheckCircle2 size={24} /><div><strong>اكتملت المهمة بنجاح</strong><span>يمكنك الانتقال للموقع التالي.</span></div></>
+                          <>
+                            <CheckCircle2 size={24} />
+                            <div>
+                              <strong>اكتملت المهمة بنجاح</strong>
+                              <span>يمكنك الانتقال للموقع التالي.</span>
+                            </div>
+                          </>
                         ) : (
-                          <><XCircle size={24} /><div><strong>{!hasImages ? "ارفع الصور أولًا" : "احفظ الموقع الآن"}</strong><span>يجب إكمال الخطوتين قبل الانتقال.</span></div></>
+                          <>
+                            <XCircle size={24} />
+                            <div>
+                              <strong>
+                                {!hasImages
+                                  ? "ارفع الصور أولًا"
+                                  : "احفظ الموقع الآن"}
+                              </strong>
+                              <span>يجب إكمال الخطوتين قبل الانتقال.</span>
+                            </div>
+                          </>
                         )}
                       </div>
                       <div className="task-bottom-nav">
-                        <button className="secondary" onClick={goToPreviousTask} disabled={currentTaskIndex === 0}>
+                        <button
+                          className="secondary"
+                          onClick={goToPreviousTask}
+                          disabled={currentTaskIndex === 0}
+                        >
                           <ChevronRight size={19} /> السابق
                         </button>
                         {currentTaskIndex < gardens.length - 1 && (
-                          <button onClick={goToNextTask} disabled={!currentTaskCompleted}>التالي <ChevronLeft size={19} /></button>
+                          <button
+                            onClick={goToNextTask}
+                            disabled={!currentTaskCompleted}
+                          >
+                            التالي <ChevronLeft size={19} />
+                          </button>
                         )}
                       </div>
                     </footer>
@@ -833,71 +1041,196 @@ export default function ProjectPage() {
                 </div>
                 <div className="search-field">
                   <Search size={18} />
-                  <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحث باسم الموقع" />
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="ابحث باسم الموقع"
+                  />
                 </div>
                 <div className="filter-pills compact">
-                  <button onClick={() => setFilter("all")} className={filter === "all" ? "active" : ""}>الكل</button>
-                  <button onClick={() => setFilter("ready")} className={filter === "ready" ? "active" : ""}>جاهزة</button>
-                  <button onClick={() => setFilter("missing")} className={filter === "missing" ? "active" : ""}>جارٍ التجهيز</button>
-                  <button onClick={() => setFilter("empty")} className={filter === "empty" ? "active" : ""}>لم تبدأ</button>
+                  <button
+                    onClick={() => setFilter("all")}
+                    className={filter === "all" ? "active" : ""}
+                  >
+                    الكل
+                  </button>
+                  <button
+                    onClick={() => setFilter("ready")}
+                    className={filter === "ready" ? "active" : ""}
+                  >
+                    جاهزة
+                  </button>
+                  <button
+                    onClick={() => setFilter("missing")}
+                    className={filter === "missing" ? "active" : ""}
+                  >
+                    جارٍ التجهيز
+                  </button>
+                  <button
+                    onClick={() => setFilter("empty")}
+                    className={filter === "empty" ? "active" : ""}
+                  >
+                    لم تبدأ
+                  </button>
                 </div>
               </section>
 
               <section className="compact-task-list">
-                {filteredGardens.length ? filteredGardens.map((garden) => {
-                  const index = gardens.findIndex((item) => item.id === garden.id);
-                  const draft = drafts[garden.id];
-                  const images = draft?.imagePreviews || [];
-                  const hasLocation = Boolean(draft?.location);
-                  const isReady = draft?.status === "ready";
-                  const isSent = draft?.status === "sent";
-                  const statusClass = isSent ? "sent" : isReady ? "ready" : images.length || hasLocation ? "working" : "idle";
-                  const statusText = isSent ? "✅ تم الإرسال" : isReady ? "🟢 جاهزة" : images.length || hasLocation ? "🟠 جارٍ التنفيذ" : "🔴 لم تبدأ";
-                  return (
-                    <button key={garden.id} className={`compact-task-row ${statusClass}`} onClick={() => { setCurrentTaskIndex(index); setViewMode("focus"); }}>
-                      <span className="compact-task-number">{index + 1}</span>
-                      <span className="compact-task-copy"><strong>{garden.name}</strong><small>{project.district}</small></span>
-                      <span className={`compact-task-status ${statusClass}`}>{statusText}</span>
-                      <ChevronLeft size={20} />
-                    </button>
-                  );
-                }) : (
-                  <div className="project-empty-state"><Search size={30} /><h2>لا توجد نتائج مطابقة</h2><p>غيّر عبارة البحث أو اختر مرشحًا آخر.</p></div>
+                {filteredGardens.length ? (
+                  filteredGardens.map((garden) => {
+                    const index = gardens.findIndex(
+                      (item) => item.id === garden.id,
+                    );
+                    const draft = drafts[garden.id];
+                    const images = draft?.imagePreviews || [];
+                    const hasLocation = Boolean(draft?.location);
+                    const isReady = draft?.status === "ready";
+                    const isSent = draft?.status === "sent";
+                    const statusClass = isSent
+                      ? "sent"
+                      : isReady
+                        ? "ready"
+                        : images.length || hasLocation
+                          ? "working"
+                          : "idle";
+                    const statusText = isSent
+                      ? "✅ تم الإرسال"
+                      : isReady
+                        ? "🟢 جاهزة"
+                        : images.length || hasLocation
+                          ? "🟠 جارٍ التنفيذ"
+                          : "🔴 لم تبدأ";
+                    return (
+                      <button
+                        key={garden.id}
+                        className={`compact-task-row ${statusClass}`}
+                        onClick={() => {
+                          setCurrentTaskIndex(index);
+                          setViewMode("focus");
+                        }}
+                      >
+                        <span className="compact-task-number">{index + 1}</span>
+                        <span className="compact-task-copy">
+                          <strong>{garden.name}</strong>
+                          <small>{project.district}</small>
+                        </span>
+                        <span className={`compact-task-status ${statusClass}`}>
+                          {statusText}
+                        </span>
+                        <ChevronLeft size={20} />
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="project-empty-state">
+                    <Search size={30} />
+                    <h2>لا توجد نتائج مطابقة</h2>
+                    <p>غيّر عبارة البحث أو اختر مرشحًا آخر.</p>
+                  </div>
                 )}
               </section>
             </>
           )}
         </>
       )}
-      {!allTasksCompleted && (
-        <section className="submit-dock">
-          <div>
-            <strong>{readyCount} مهمة جاهزة للإرسال</strong>
-            <span>
-              {remainingCount
-                ? `باقي ${remainingCount} مهمة غير مكتملة.`
-                : "اكتملت مهام اليوم، ويمكن إرسال التقرير الآن."}
-            </span>
-          </div>
-          <button onClick={submitReport} disabled={loading || !readyCount}>
-            {loading ? (
-              <Loader2 className="spin" size={18} />
-            ) : (
-              <CloudUpload size={18} />
-            )}
-            إرسال التقرير
-          </button>
-        </section>
-      )}
+      {previewImage &&
+        (() => {
+          const gallery = drafts[previewImage.gardenId]?.imagePreviews || [];
+          const currentSrc = gallery[previewImage.index];
+          if (!currentSrc) return null;
+          const goGallery = (direction: number) => {
+            const nextIndex =
+              (previewImage.index + direction + gallery.length) %
+              gallery.length;
+            setPreviewImage({ ...previewImage, index: nextIndex });
+          };
+          return (
+            <div
+              className="image-lightbox"
+              role="dialog"
+              aria-modal="true"
+              onClick={() => setPreviewImage(null)}
+              onTouchStart={(event) => {
+                lightboxTouchStartX.current = event.touches[0]?.clientX ?? null;
+              }}
+              onTouchEnd={(event) => {
+                const startX = lightboxTouchStartX.current;
+                const endX = event.changedTouches[0]?.clientX;
+                lightboxTouchStartX.current = null;
+                if (startX == null || endX == null || gallery.length < 2)
+                  return;
+                const delta = endX - startX;
+                if (Math.abs(delta) < 45) return;
+                goGallery(delta > 0 ? -1 : 1);
+              }}
+            >
+              <button
+                className="image-lightbox-close"
+                onClick={() => setPreviewImage(null)}
+                aria-label="إغلاق"
+              >
+                <X size={24} />
+              </button>
+              <div className="lightbox-counter">
+                {previewImage.index + 1} / {gallery.length}
+              </div>
+              {gallery.length > 1 && (
+                <button
+                  className="lightbox-nav previous"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goGallery(-1);
+                  }}
+                >
+                  <ChevronRight size={30} />
+                </button>
+              )}
+              <img
+                src={currentSrc}
+                alt="معاينة الصورة بالحجم الكبير"
+                onClick={(event) => event.stopPropagation()}
+              />
+              {gallery.length > 1 && (
+                <button
+                  className="lightbox-nav next"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goGallery(1);
+                  }}
+                >
+                  <ChevronLeft size={30} />
+                </button>
+              )}
+              <button
+                className="lightbox-delete"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeImage(previewImage.gardenId, previewImage.index);
+                  if (gallery.length <= 1) setPreviewImage(null);
+                  else
+                    setPreviewImage({
+                      ...previewImage,
+                      index: Math.max(0, previewImage.index - 1),
+                    });
+                }}
+              >
+                <Trash2 size={19} /> حذف الصورة
+              </button>
+            </div>
+          );
+        })()}
 
-      {previewImage && (
-        <div className="image-lightbox" role="dialog" aria-modal="true" onClick={() => setPreviewImage(null)}>
-          <button className="image-lightbox-close" onClick={() => setPreviewImage(null)} aria-label="إغلاق"><X size={24} /></button>
-          <img src={previewImage} alt="معاينة الصورة بالحجم الكبير" onClick={(event) => event.stopPropagation()} />
+      {isAdvancing && (
+        <div className="task-transition-overlay">
+          <div>
+            <CheckCircle2 size={48} />
+            <strong>تم تجهيز الموقع</strong>
+            <span>جاري فتح المهمة التالية...</span>
+          </div>
         </div>
       )}
 
-      {result && (
+      {result && !result.ok && (
         <section className={`result-toast ${result.ok ? "success" : "danger"}`}>
           <strong>{result.ok ? "تمت العملية" : "تعذر الإرسال"}</strong>
           <p>{result.message}</p>
