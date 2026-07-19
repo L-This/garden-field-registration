@@ -154,7 +154,7 @@ export default function ProjectPage() {
   const [managerName, setManagerName] = useState("مدير المشروع");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<FieldSubmitResult | null>(null);
-  const [viewMode, setViewMode] = useState<"focus" | "all">("focus");
+  const [viewMode, setViewMode] = useState<"focus" | "all">("all");
   const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
   const [previewImage, setPreviewImage] = useState<{
     gardenId: string;
@@ -396,9 +396,7 @@ export default function ProjectPage() {
       next.imagePreviews = images;
       next.imagePreview = images[0];
 
-      if (images.length && next.location) next.status = "ready";
-      else if (images.length && !next.location)
-        next.status = "missing-location";
+      if (images.length) next.status = "ready";
       else next.status = "empty";
 
       return { ...current, [gardenId]: next };
@@ -494,9 +492,7 @@ export default function ProjectPage() {
     (sum, draft) => sum + (draft.imagePreviews?.length || 0),
     0,
   );
-  const withLocation = Object.values(drafts).filter((draft) =>
-    Boolean(draft.location),
-  ).length;
+  const withLocation = 0;
   const readyCount = readyDrafts.length;
   const completedCount = Object.values(drafts).filter(
     (draft) => draft.status === "ready" || draft.status === "sent",
@@ -529,7 +525,7 @@ export default function ProjectPage() {
 
   const goToNextTask = () => {
     if (!currentTaskCompleted) {
-      window.alert("أكمل رفع الصور ثم احفظ الموقع قبل الانتقال.");
+      window.alert("ارفع صورة واحدة على الأقل قبل الانتقال.");
       return;
     }
 
@@ -555,7 +551,7 @@ export default function ProjectPage() {
 
       if (!matchesQuery) return false;
       if (filter === "ready") return draft?.status === "ready";
-      if (filter === "missing") return draft?.status === "missing-location";
+      if (filter === "missing") return Boolean(draft?.imagePreviews?.length) && draft?.status !== "ready";
       if (filter === "empty") return !draft || draft.status === "empty";
       return true;
     });
@@ -787,7 +783,7 @@ export default function ProjectPage() {
                   <strong dir="ltr">{result.reportNumber}</strong>
                 </div>
               )}
-              <small>شكرًا لك، تم حفظ جميع المهام والصور والمواقع بنجاح.</small>
+              <small>شكرًا لك، تم حفظ جميع المهام والصور بنجاح.</small>
             </div>
             <Link href="/" className="completion-back-projects">
               <ArrowLeft size={19} /> العودة للمشاريع
@@ -887,7 +883,7 @@ export default function ProjectPage() {
                 جدول الري لهذا المشروع لا يحتوي على مهام في يوم {todayLabel}.
               </p>
             </section>
-          ) : viewMode === "focus" && currentGarden ? (
+          ) : false && viewMode === "focus" && currentGarden ? (
             <section className="field-task-shell" id="current-field-task">
               <header className="field-task-heading">
                 <div>
@@ -1148,7 +1144,7 @@ export default function ProjectPage() {
               <section className="compact-task-toolbar">
                 <div>
                   <strong>{filteredGardens.length} مهمة</strong>
-                  <span>اضغط على أي مهمة لفتحها</span>
+                  <span>ارفع صور كل موقع مباشرة من القائمة</span>
                 </div>
                 <div className="search-field">
                   <Search size={18} />
@@ -1175,7 +1171,7 @@ export default function ProjectPage() {
                     onClick={() => setFilter("missing")}
                     className={filter === "missing" ? "active" : ""}
                   >
-                    جارٍ التجهيز
+                    فيها صور
                   </button>
                   <button
                     onClick={() => setFilter("empty")}
@@ -1186,50 +1182,67 @@ export default function ProjectPage() {
                 </div>
               </section>
 
-              <section className="compact-task-list">
+              <section className="quick-registration-list">
                 {filteredGardens.length ? (
                   filteredGardens.map((garden) => {
-                    const index = gardens.findIndex(
-                      (item) => item.id === garden.id,
-                    );
+                    const index = gardens.findIndex((item) => item.id === garden.id);
                     const draft = drafts[garden.id];
                     const images = draft?.imagePreviews || [];
-                    const hasLocation = Boolean(draft?.location);
-                    const isReady = draft?.status === "ready";
+                    const isReady = images.length > 0;
                     const isSent = draft?.status === "sent";
-                    const statusClass = isSent
-                      ? "sent"
-                      : isReady
-                        ? "ready"
-                        : images.length || hasLocation
-                          ? "working"
-                          : "idle";
-                    const statusText = isSent
-                      ? "✅ تم الإرسال"
-                      : isReady
-                        ? "🟢 جاهزة"
-                        : images.length || hasLocation
-                          ? "🟠 جارٍ التنفيذ"
-                          : "🔴 لم تبدأ";
                     return (
-                      <button
-                        key={garden.id}
-                        className={`compact-task-row ${statusClass}`}
-                        onClick={() => {
-                          setCurrentTaskIndex(index);
-                          setViewMode("focus");
-                        }}
-                      >
-                        <span className="compact-task-number">{index + 1}</span>
-                        <span className="compact-task-copy">
-                          <strong>{garden.name}</strong>
-                          <small>{project.district}</small>
-                        </span>
-                        <span className={`compact-task-status ${statusClass}`}>
-                          {statusText}
-                        </span>
-                        <ChevronLeft size={20} />
-                      </button>
+                      <article key={garden.id} className={`quick-garden-card ${isSent ? "sent" : isReady ? "ready" : "idle"}`}>
+                        <div className="quick-garden-head">
+                          <span className="quick-garden-number">{index + 1}</span>
+                          <div>
+                            <h3>{garden.name}</h3>
+                            <p>{garden.zone || project.district}</p>
+                          </div>
+                          <span className={`quick-garden-status ${isSent ? "sent" : isReady ? "ready" : "idle"}`}>
+                            {isSent ? "تم الإرسال" : isReady ? `جاهزة · ${images.length} ${images.length === 1 ? "صورة" : "صور"}` : "بانتظار الصور"}
+                          </span>
+                        </div>
+
+                        <div className="quick-garden-body">
+                          <div className="quick-thumbnails">
+                            {images.length ? images.map((src, imageIndex) => (
+                              <button
+                                type="button"
+                                className="quick-thumb"
+                                key={`${garden.id}-${imageIndex}`}
+                                onClick={() => setPreviewImage({ gardenId: garden.id, index: imageIndex })}
+                              >
+                                <img src={src} alt={`صورة ${imageIndex + 1} لـ ${garden.name}`} />
+                                <span>{imageIndex + 1}</span>
+                              </button>
+                            )) : (
+                              <div className="quick-empty-images"><ImageIcon size={25} /><span>لم تُرفع صور بعد</span></div>
+                            )}
+                          </div>
+
+                          <div className="quick-card-actions">
+                            <label className={`quick-upload-button ${uploadPulseGardenId === garden.id ? "upload-pulse" : ""}`}>
+                              <Camera size={21} />
+                              <span>{images.length ? "إضافة صور" : "رفع الصور"}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                capture="environment"
+                                onChange={(event) => {
+                                  handleImages(garden.id, event.target.files);
+                                  event.currentTarget.value = "";
+                                }}
+                              />
+                            </label>
+                            {images.length > 0 && (
+                              <button type="button" className="quick-clear-button" onClick={() => clearGarden(garden.id)}>
+                                <Trash2 size={18} /> مسح الصور
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </article>
                     );
                   })
                 ) : (
