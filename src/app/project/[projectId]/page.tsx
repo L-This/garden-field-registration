@@ -18,7 +18,6 @@ import {
   CloudUpload,
   Image as ImageIcon,
   Loader2,
-  LocateFixed,
   LockKeyhole,
   List,
   Focus,
@@ -26,7 +25,6 @@ import {
   Trophy,
   Undo2,
   Clock3,
-  MapPin,
   Search,
   ShieldCheck,
   Sprout,
@@ -38,19 +36,13 @@ import {
 import { supabase } from "@/lib/supabase";
 import { submitIrrigationReport } from "@/lib/api";
 
-type DraftStatus =
-  "empty" | "ready" | "missing-location" | "sent" | "duplicate" | "failed";
+type DraftStatus = "empty" | "ready" | "sent" | "duplicate" | "failed";
 
 type GardenDraft = {
   gardenId: string;
   gardenName: string;
   imagePreview?: string;
   imagePreviews?: string[];
-  location?: {
-    lat: number;
-    lng: number;
-    accuracy?: number;
-  };
   status: DraftStatus;
   note?: string;
 };
@@ -167,7 +159,6 @@ export default function ProjectPage() {
   const [taskStartedAt, setTaskStartedAt] = useState<number | null>(null);
   const [submittedAt, setSubmittedAt] = useState<Date | null>(null);
   const [imageSuccessGardenId, setImageSuccessGardenId] = useState<string | null>(null);
-  const [locationSuccessGardenId, setLocationSuccessGardenId] = useState<string | null>(null);
   const [reviewAfterCompletion, setReviewAfterCompletion] = useState(false);
   const [submitStage, setSubmitStage] = useState<
     "idle" | "uploading" | "saving" | "verifying" | "done"
@@ -396,8 +387,7 @@ export default function ProjectPage() {
       next.imagePreviews = images;
       next.imagePreview = images[0];
 
-      if (images.length) next.status = "ready";
-      else next.status = "empty";
+      next.status = images.length ? "ready" : "empty";
 
       return { ...current, [gardenId]: next };
     });
@@ -443,40 +433,6 @@ export default function ProjectPage() {
     });
   };
 
-  const handleLocation = (gardenId: string) => {
-    if (!navigator.geolocation) {
-      updateDraft(gardenId, {
-        status: "failed",
-        note: "المتصفح لا يدعم تحديد الموقع",
-      });
-      return;
-    }
-
-    updateDraft(gardenId, { note: "جاري جلب الموقع..." });
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        updateDraft(gardenId, {
-          location: {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-            accuracy: position.coords.accuracy,
-          },
-          note: "📍 تم تحديد الموقع بدقة",
-        });
-        setLocationSuccessGardenId(gardenId);
-        window.setTimeout(() => setLocationSuccessGardenId((current) => current === gardenId ? null : current), 1100);
-      },
-      () => {
-        updateDraft(gardenId, {
-          status: "failed",
-          note: "تعذر جلب الموقع، تأكد من السماح للمتصفح",
-        });
-      },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
-    );
-  };
-
   const clearGarden = (gardenId: string) => {
     setDrafts((current) => {
       const next = { ...current };
@@ -492,7 +448,6 @@ export default function ProjectPage() {
     (sum, draft) => sum + (draft.imagePreviews?.length || 0),
     0,
   );
-  const withLocation = 0;
   const readyCount = readyDrafts.length;
   const completedCount = Object.values(drafts).filter(
     (draft) => draft.status === "ready" || draft.status === "sent",
@@ -748,7 +703,7 @@ export default function ProjectPage() {
           <h2>أنجزت</h2>
           <p>
             {allTasksCompleted
-              ? "اكتملت جميع المواقع وأصبحت جاهزة للإرسال."
+              ? "اكتملت صور جميع الحدائق وأصبحت جاهزة للإرسال."
               : `المتبقي: ${remainingCount} مهمة`}
           </p>
         </div>
@@ -772,7 +727,7 @@ export default function ProjectPage() {
               <span className="celebration-label">تم بنجاح</span>
               <strong>تم إرسال تقرير اليوم بنجاح</strong>
               <div className="completion-summary-grid sent-summary">
-                <div><MapPin size={22} /><span>عدد المواقع</span><strong>{gardens.length}</strong></div>
+                <div><Sprout size={22} /><span>عدد الحدائق</span><strong>{gardens.length}</strong></div>
                 <div><Camera size={22} /><span>عدد الصور</span><strong>{withImage}</strong></div>
                 <div><Clock3 size={22} /><span>وقت الإرسال</span><strong>{submittedTimeLabel}</strong></div>
               </div>
@@ -783,7 +738,7 @@ export default function ProjectPage() {
                   <strong dir="ltr">{result.reportNumber}</strong>
                 </div>
               )}
-              <small>شكرًا لك، تم حفظ جميع المهام والصور بنجاح.</small>
+              <small>شكرًا لك، تم حفظ جميع الحدائق والصور بنجاح.</small>
             </div>
             <Link href="/" className="completion-back-projects">
               <ArrowLeft size={19} /> العودة للمشاريع
@@ -797,7 +752,7 @@ export default function ProjectPage() {
             <div className="completion-confetti" aria-hidden="true"><i/><i/><i/><i/><i/><i/></div>
             <div className="completion-copy">
               <span className="celebration-label">أحسنت</span>
-              <strong>تم الانتهاء من جميع المواقع</strong>
+              <strong>تم الانتهاء من جميع الحدائق</strong>
               <p>
                 {completedCount} / {gardens.length}
               </p>
@@ -808,9 +763,9 @@ export default function ProjectPage() {
                   <strong>{withImage}</strong>
                 </div>
                 <div>
-                  <MapPin size={22} />
-                  <span>المواقع</span>
-                  <strong>{withLocation}</strong>
+                  <Sprout size={22} />
+                  <span>الحدائق</span>
+                  <strong>{gardens.length}</strong>
                 </div>
                 <div>
                   <Clock3 size={22} />
@@ -878,12 +833,12 @@ export default function ProjectPage() {
           ) : !gardens.length ? (
             <section className="project-empty-state">
               <CheckCircle2 size={34} />
-              <h2>لا توجد مواقع مجدولة اليوم</h2>
+              <h2>لا توجد حدائق مجدولة اليوم</h2>
               <p>
                 جدول الري لهذا المشروع لا يحتوي على مهام في يوم {todayLabel}.
               </p>
             </section>
-          ) : false && viewMode === "focus" && currentGarden ? (
+          ) : viewMode === "focus" && currentGarden ? (
             <section className="field-task-shell" id="current-field-task">
               <header className="field-task-heading">
                 <div>
@@ -916,32 +871,28 @@ export default function ProjectPage() {
                 const draft = drafts[garden.id];
                 const images = draft?.imagePreviews || [];
                 const hasImages = images.length > 0;
-                const hasLocation = Boolean(draft?.location);
                 const isReady = draft?.status === "ready";
                 const isSent = draft?.status === "sent";
-                const mapsUrl = draft?.location
-                  ? `https://www.google.com/maps?q=${draft.location.lat},${draft.location.lng}`
-                  : "";
                 const stageLabel = isSent
                   ? "✅ تم الإرسال"
                   : isReady
                     ? "🟢 جاهزة للإرسال"
-                    : hasImages || hasLocation
+                    : hasImages
                       ? "🟠 جارٍ التنفيذ"
                       : "🔴 لم تبدأ";
                 const stageClass = isSent
                   ? "sent"
                   : isReady
                     ? "ready"
-                    : hasImages || hasLocation
+                    : hasImages
                       ? "working"
                       : "idle";
 
                 return (
                   <article className={`field-task-card ${stageClass}`}>
                     <div className="field-task-title">
-                      <div className="task-location-icon">
-                        <MapPin size={30} />
+                      <div className="task-garden-icon">
+                        <Sprout size={30} />
                       </div>
                       <div>
                         <small>{project.district}</small>
@@ -962,17 +913,6 @@ export default function ProjectPage() {
                           {hasImages
                             ? `📷 ${images.length} صورة مرفوعة`
                             : "لم تُرفع بعد"}
-                        </small>
-                      </div>
-                      <div className={hasLocation ? "done" : ""}>
-                        <span>
-                          <LocateFixed size={20} />
-                        </span>
-                        <strong>الموقع</strong>
-                        <small>
-                          {hasLocation
-                            ? "تم تحديد الموقع بدقة"
-                            : "لم يُحفظ بعد"}
                         </small>
                       </div>
                     </div>
@@ -1045,36 +985,8 @@ export default function ProjectPage() {
                           }
                         />
                       </label>
-                      <button
-                        className="field-big-action"
-                        onClick={() => handleLocation(garden.id)}
-                      >
-                        <LocateFixed size={23} />
-                        <span>
-                          <strong>
-                            {locationSuccessGardenId === garden.id
-                              ? "✓ حُفظ بنجاح"
-                              : hasLocation ? "إعادة تحديد الموقع" : "حفظ الموقع"}
-                          </strong>
-                          <small>
-                            {hasLocation
-                              ? "الموقع محفوظ ويمكن تحديده من جديد"
-                              : "استخدم موقع الجهاز الحالي"}
-                          </small>
-                        </span>
-                      </button>
                     </div>
 
-                    {mapsUrl && (
-                      <a
-                        className="field-map-link"
-                        href={mapsUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        فتح الموقع على الخريطة
-                      </a>
-                    )}
                     {draft?.note && (
                       <p className="field-task-note">{draft.note}</p>
                     )}
@@ -1096,7 +1008,7 @@ export default function ProjectPage() {
                             <CheckCircle2 size={24} />
                             <div>
                               <strong>اكتملت المهمة بنجاح</strong>
-                              <span>يمكنك الانتقال للموقع التالي.</span>
+                              <span>يمكنك الانتقال للحديقة التالية.</span>
                             </div>
                           </>
                         ) : (
@@ -1104,11 +1016,9 @@ export default function ProjectPage() {
                             <XCircle size={24} />
                             <div>
                               <strong>
-                                {!hasImages
-                                  ? "ارفع الصور أولًا"
-                                  : "احفظ الموقع الآن"}
+                                ارفع صورة واحدة على الأقل
                               </strong>
-                              <span>يجب إكمال الخطوتين قبل الانتقال.</span>
+                              <span>الصورة هي المتطلب الوحيد لإكمال الحديقة.</span>
                             </div>
                           </>
                         )}
@@ -1144,14 +1054,14 @@ export default function ProjectPage() {
               <section className="compact-task-toolbar">
                 <div>
                   <strong>{filteredGardens.length} مهمة</strong>
-                  <span>ارفع صور كل موقع مباشرة من القائمة</span>
+                  <span>ارفع صور كل حديقة مباشرة من القائمة</span>
                 </div>
                 <div className="search-field">
                   <Search size={18} />
                   <input
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="ابحث باسم الموقع"
+                    placeholder="ابحث باسم الحديقة"
                   />
                 </div>
                 <div className="filter-pills compact">
@@ -1171,7 +1081,7 @@ export default function ProjectPage() {
                     onClick={() => setFilter("missing")}
                     className={filter === "missing" ? "active" : ""}
                   >
-                    فيها صور
+                    جارٍ التجهيز
                   </button>
                   <button
                     onClick={() => setFilter("empty")}
@@ -1182,65 +1092,76 @@ export default function ProjectPage() {
                 </div>
               </section>
 
-              <section className="quick-registration-list">
+              <section className="compact-task-list">
                 {filteredGardens.length ? (
                   filteredGardens.map((garden) => {
-                    const index = gardens.findIndex((item) => item.id === garden.id);
+                    const index = gardens.findIndex(
+                      (item) => item.id === garden.id,
+                    );
                     const draft = drafts[garden.id];
                     const images = draft?.imagePreviews || [];
-                    const isReady = images.length > 0;
+                        const isReady = draft?.status === "ready";
                     const isSent = draft?.status === "sent";
+                    const statusClass = isSent
+                      ? "sent"
+                      : isReady
+                        ? "ready"
+                        : images.length
+                          ? "working"
+                          : "idle";
+                    const statusText = isSent
+                      ? "✅ تم الإرسال"
+                      : isReady
+                        ? "🟢 جاهزة"
+                        : images.length
+                          ? "🟠 جارٍ التنفيذ"
+                          : "🔴 لم تبدأ";
                     return (
-                      <article key={garden.id} className={`quick-garden-card ${isSent ? "sent" : isReady ? "ready" : "idle"}`}>
-                        <div className="quick-garden-head">
-                          <span className="quick-garden-number">{index + 1}</span>
-                          <div>
-                            <h3>{garden.name}</h3>
-                            <p>{garden.zone || project.district}</p>
-                          </div>
-                          <span className={`quick-garden-status ${isSent ? "sent" : isReady ? "ready" : "idle"}`}>
-                            {isSent ? "تم الإرسال" : isReady ? `جاهزة · ${images.length} ${images.length === 1 ? "صورة" : "صور"}` : "بانتظار الصور"}
-                          </span>
-                        </div>
-
-                        <div className="quick-garden-body">
-                          <div className="quick-thumbnails">
-                            {images.length ? images.map((src, imageIndex) => (
-                              <button
-                                type="button"
-                                className="quick-thumb"
-                                key={`${garden.id}-${imageIndex}`}
-                                onClick={() => setPreviewImage({ gardenId: garden.id, index: imageIndex })}
-                              >
-                                <img src={src} alt={`صورة ${imageIndex + 1} لـ ${garden.name}`} />
-                                <span>{imageIndex + 1}</span>
-                              </button>
-                            )) : (
-                              <div className="quick-empty-images"><ImageIcon size={25} /><span>لم تُرفع صور بعد</span></div>
-                            )}
-                          </div>
-
-                          <div className="quick-card-actions">
-                            <label className={`quick-upload-button ${uploadPulseGardenId === garden.id ? "upload-pulse" : ""}`}>
-                              <Camera size={21} />
-                              <span>{images.length ? "إضافة صور" : "رفع الصور"}</span>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                capture="environment"
-                                onChange={(event) => {
-                                  handleImages(garden.id, event.target.files);
-                                  event.currentTarget.value = "";
-                                }}
-                              />
-                            </label>
-                            {images.length > 0 && (
-                              <button type="button" className="quick-clear-button" onClick={() => clearGarden(garden.id)}>
-                                <Trash2 size={18} /> مسح الصور
-                              </button>
-                            )}
-                          </div>
+                      <article
+                        key={garden.id}
+                        className={`compact-task-row quick-photo-row ${statusClass}`}
+                      >
+                        <span className="compact-task-number">{index + 1}</span>
+                        <span className="compact-task-copy">
+                          <strong>{garden.name}</strong>
+                          <small>{images.length ? `${images.length} ${images.length === 1 ? "صورة" : "صور"}` : "لم تُرفع صور بعد"}</small>
+                        </span>
+                        <span className={`compact-task-status ${statusClass}`}>
+                          {statusText}
+                        </span>
+                        <div className="quick-photo-actions">
+                          {images.length > 0 && (
+                            <button
+                              type="button"
+                              className="quick-preview-button"
+                              onClick={() => setPreviewImage({ gardenId: garden.id, index: 0 })}
+                            >
+                              <ImageIcon size={18} /> معاينة
+                            </button>
+                          )}
+                          <label className="quick-upload-button">
+                            <Camera size={18} />
+                            <span>{images.length ? "إضافة صور" : "رفع صور"}</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              onChange={(event) => {
+                                handleImages(garden.id, event.target.files);
+                                event.currentTarget.value = "";
+                              }}
+                            />
+                          </label>
+                          {images.length > 0 && (
+                            <button
+                              type="button"
+                              className="quick-clear-button"
+                              onClick={() => clearGarden(garden.id)}
+                              title="حذف صور الحديقة"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          )}
                         </div>
                       </article>
                     );
@@ -1348,7 +1269,7 @@ export default function ProjectPage() {
         <div className="task-transition-overlay">
           <div>
             <CheckCircle2 size={48} />
-            <strong>تم تجهيز الموقع</strong>
+            <strong>تم تجهيز الحديقة</strong>
             <span>جاري فتح المهمة التالية...</span>
           </div>
         </div>

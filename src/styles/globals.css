@@ -437,9 +437,6 @@ button {
   box-shadow: 0 24px 75px rgba(16, 185, 129, 0.16);
 }
 
-.garden-card-pro.missing-location {
-  border-color: rgba(245, 158, 11, 0.36);
-}
 
 .garden-card-pro.failed {
   border-color: rgba(239, 68, 68, 0.36);
@@ -573,10 +570,6 @@ button {
   cursor: pointer;
 }
 
-.action-btn.location {
-  background: #e1f7ee;
-  color: var(--brand);
-}
 
 .garden-actions .action-btn:hover,
 .submit-dock button:hover,
@@ -2343,7 +2336,7 @@ button {
   padding-bottom: 24px;
   border-bottom: 1px solid #e2eee9;
 }
-.task-location-icon {
+.task-garden-icon {
   width: 68px;
   height: 68px;
   border-radius: 22px;
@@ -2498,7 +2491,7 @@ button {
   .task-nav-actions button { flex:1;justify-content:center; }
   .field-task-card { padding:18px; }
   .field-task-title h2 { font-size:30px; }
-  .task-location-icon { width:54px;height:54px;border-radius:17px; }
+  .task-garden-icon { width:54px;height:54px;border-radius:17px; }
   .task-checklist,.field-action-grid { grid-template-columns:1fr; }
   .task-proof-area { min-height:180px; }
   .task-proof-thumb { min-width:220px; }
@@ -2939,56 +2932,72 @@ button {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Quick field registration: all locations, photos only */
-.quick-mode-title {
+/* التسجيل السريع: جميع الحدائق وصور فقط */
+.quick-photo-row {
+  cursor: default;
+  grid-template-columns: auto minmax(180px, 1fr) auto minmax(230px, auto);
+}
+.quick-photo-actions {
   display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.quick-upload-button,
+.quick-preview-button,
+.quick-clear-button {
+  border: 0;
+  border-radius: 12px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  padding: 14px 22px;
+  gap: 7px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
 }
-.quick-mode-title strong { display:flex; align-items:center; gap:9px; color:#075f48; }
-.quick-registration-list {
-  display: grid;
-  gap: 14px;
-  margin: 18px auto 120px;
-  max-width: 1460px;
+.quick-upload-button {
+  position: relative;
+  overflow: hidden;
+  padding: 0 18px;
+  background: #07865f;
+  color: #fff;
 }
-.quick-garden-card {
-  background: rgba(255,255,255,.93);
-  border: 1px solid rgba(8,125,91,.15);
-  border-radius: 22px;
-  padding: 16px 18px;
-  box-shadow: 0 12px 30px rgba(5,70,52,.07);
-  transition: .2s ease;
+.quick-upload-button input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
 }
-.quick-garden-card.ready { border-color: rgba(10,170,113,.42); background: rgba(244,255,250,.96); }
-.quick-garden-card.sent { border-color: rgba(34,116,190,.38); background: rgba(245,250,255,.96); }
-.quick-garden-head { display:grid; grid-template-columns:auto 1fr auto; gap:13px; align-items:center; }
-.quick-garden-number { width:38px; height:38px; border-radius:12px; display:grid; place-items:center; background:#e6f8f1; color:#087c5d; font-weight:900; }
-.quick-garden-head h3 { margin:0; font-size:1.15rem; color:#063f32; }
-.quick-garden-head p { margin:3px 0 0; color:#70847e; font-size:.88rem; }
-.quick-garden-status { white-space:nowrap; border-radius:999px; padding:8px 12px; font-size:.82rem; font-weight:800; }
-.quick-garden-status.idle { background:#f0f3f2; color:#687773; }
-.quick-garden-status.ready { background:#d9fae8; color:#087b52; }
-.quick-garden-status.sent { background:#dfeeff; color:#246aa1; }
-.quick-garden-body { display:grid; grid-template-columns:1fr auto; gap:16px; align-items:center; margin-top:14px; }
-.quick-thumbnails { display:flex; gap:9px; overflow-x:auto; min-height:82px; align-items:center; padding:2px; }
-.quick-thumb { position:relative; border:0; padding:0; background:transparent; flex:0 0 104px; height:78px; border-radius:13px; overflow:hidden; cursor:pointer; }
-.quick-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
-.quick-thumb span { position:absolute; bottom:5px; right:6px; background:rgba(0,0,0,.62); color:#fff; border-radius:999px; min-width:22px; height:22px; display:grid; place-items:center; font-size:.72rem; }
-.quick-empty-images { min-height:76px; width:100%; border:1px dashed #b9dcd1; border-radius:14px; display:flex; align-items:center; justify-content:center; gap:9px; color:#70847e; background:#f7fcfa; }
-.quick-card-actions { display:flex; gap:9px; align-items:center; }
-.quick-upload-button, .quick-clear-button { min-height:48px; padding:0 18px; border-radius:14px; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:850; cursor:pointer; white-space:nowrap; }
-.quick-upload-button { background:#07966e; color:white; box-shadow:0 9px 20px rgba(7,150,110,.2); }
-.quick-upload-button input { display:none; }
-.quick-clear-button { border:1px solid #efcaca; background:#fff7f7; color:#b23a3a; }
+.quick-preview-button {
+  padding: 0 14px;
+  color: #075f49;
+  background: #e8f7f1;
+  border: 1px solid #c7e8dc;
+}
+.quick-clear-button {
+  width: 44px;
+  color: #b42318;
+  background: #fff1ef;
+  border: 1px solid #ffd2cc;
+}
+.quick-photo-row.ready {
+  border-color: #8cddbf;
+  background: linear-gradient(90deg, #f4fff9, #fff);
+}
 @media (max-width: 760px) {
-  .quick-registration-list { gap:10px; margin-top:12px; }
-  .quick-garden-card { border-radius:17px; padding:13px; }
-  .quick-garden-head { grid-template-columns:auto 1fr; }
-  .quick-garden-status { grid-column:1 / -1; justify-self:start; margin-inline-start:50px; padding:6px 10px; }
-  .quick-garden-body { grid-template-columns:1fr; gap:10px; }
-  .quick-card-actions { width:100%; }
-  .quick-upload-button { flex:1; }
-  .quick-clear-button { padding:0 12px; }
-  .quick-thumb { flex-basis:88px; height:68px; }
+  .quick-photo-row {
+    grid-template-columns: auto 1fr;
+    gap: 10px;
+  }
+  .quick-photo-row .compact-task-status {
+    justify-self: start;
+    margin-inline-start: 46px;
+  }
+  .quick-photo-actions {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+  .quick-upload-button { flex: 1; }
 }

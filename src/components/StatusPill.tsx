@@ -5,7 +5,6 @@ export function StatusPill({ draft }: { draft?: GardenDraft }) {
   const label = {
     empty: 'لم يتم الرفع',
     ready: 'جاهزة للإرسال',
-    'missing-location': 'صورة بدون موقع',
     sent: 'تم الإرسال',
     duplicate: 'مسجلة مسبقًا',
     failed: 'فشل الإرسال',

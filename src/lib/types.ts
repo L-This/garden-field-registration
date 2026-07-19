@@ -2,12 +2,7 @@ export type GardenDraft = {
   gardenId: string;
   imageName?: string;
   imagePreview?: string;
-  location?: {
-    lat: number;
-    lng: number;
-    accuracy?: number;
-  };
-  status: 'empty' | 'ready' | 'missing-location' | 'sent' | 'duplicate' | 'failed';
+  status: 'empty' | 'ready' | 'sent' | 'duplicate' | 'failed';
   message?: string;
 };
 
