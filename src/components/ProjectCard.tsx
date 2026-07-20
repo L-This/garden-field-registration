@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowLeft, Sprout } from 'lucide-react';
+import { ArrowLeft, MapPinned, Sprout } from 'lucide-react';
 import { Project } from '@/data/projects';
 import { Garden } from '@/data/gardens';
 
@@ -10,7 +10,7 @@ export function ProjectCard({ project, gardens }: { project: Project; gardens: G
 
       <div className="project-content">
         <h2>{project.name}</h2>
-        <p><Sprout size={16} /> {project.district}</p>
+        <p><MapPinned size={16} /> {project.district}</p>
         <div className="project-meta">
           <span>{gardens.length} حديقة</span>
           <span>تسجيل يومي</span>

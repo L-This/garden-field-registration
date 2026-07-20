@@ -1,6 +1,6 @@
 'use client';
 
-import { Camera, RefreshCcw } from 'lucide-react';
+import { Camera, LocateFixed, RefreshCcw, CheckCircle2 } from 'lucide-react';
 import { Garden } from '@/data/gardens';
 import { GardenDraft } from '@/lib/types';
 import { fileToDataUrl } from '@/lib/image';
@@ -20,7 +20,7 @@ export function GardenCard({
   async function handleFile(file?: File) {
     if (!file) return;
     const preview = await fileToDataUrl(file);
-    const nextStatus = 'ready';
+    const nextStatus = current.location ? 'ready' : 'missing-location';
     onChange(garden.id, {
       ...current,
       imageName: file.name,
@@ -30,6 +30,28 @@ export function GardenCard({
     });
   }
 
+  function handleLocation() {
+    if (!navigator.geolocation) {
+      onChange(garden.id, { ...current, status: current.imagePreview ? 'missing-location' : 'empty', message: 'المتصفح لا يدعم الموقع.' });
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        onChange(garden.id, {
+          ...current,
+          location: {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+          },
+          status: current.imagePreview ? 'ready' : 'empty',
+          message: 'تم حفظ الموقع.',
+        });
+      },
+      () => onChange(garden.id, { ...current, message: 'تعذر جلب الموقع. تأكد من السماح للموقع.' }),
+      { enableHighAccuracy: true, timeout: 12000 }
+    );
+  }
 
   return (
     <article className="garden-card">
@@ -53,8 +75,13 @@ export function GardenCard({
           {current.imagePreview ? 'تغيير الصورة' : 'رفع صورة'}
           <input type="file" accept="image/*" capture="environment" onChange={(event) => handleFile(event.target.files?.[0])} />
         </label>
+        <button className="action-btn" onClick={handleLocation} type="button">
+          {current.location ? <CheckCircle2 size={18} /> : <LocateFixed size={18} />}
+          {current.location ? 'تحديث الموقع' : 'جلب الموقع'}
+        </button>
       </div>
 
+      {current.location && <p className="mini-note">الموقع محفوظ: {current.location.lat.toFixed(5)}, {current.location.lng.toFixed(5)}</p>}
       {current.message && <p className="mini-note warning">{current.message}</p>}
     </article>
   );
