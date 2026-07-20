@@ -16,6 +16,12 @@ import {
   Trash2,
   X,
   ZoomIn,
+  Clock3,
+  FileCheck2,
+  Printer,
+  RefreshCw,
+  UserRound,
+  Images,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import {
@@ -86,6 +92,24 @@ function formatArabicDate(dateValue: string) {
   }).format(new Date(`${dateValue}T12:00:00Z`));
 }
 
+function formatArabicDateTime(dateValue?: string) {
+  if (!dateValue) return "غير متاح";
+  return new Intl.DateTimeFormat("ar-SA", {
+    timeZone: RIYADH_TIME_ZONE,
+    dateStyle: "long",
+    timeStyle: "short",
+  }).format(new Date(dateValue));
+}
+
+function formatSyncTime(date: Date) {
+  return new Intl.DateTimeFormat("ar-SA", {
+    timeZone: RIYADH_TIME_ZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).format(date);
+}
+
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -118,6 +142,7 @@ export default function ProjectPage() {
   const [loading, setLoading] = useState(false);
   const [submitStage, setSubmitStage] = useState<"idle" | "uploading" | "saving" | "verifying">("idle");
   const [result, setResult] = useState<FieldSubmitResult | null>(null);
+  const [lastSyncedAt, setLastSyncedAt] = useState(new Date());
 
   const reportLocked = Boolean(
     context && ["submitted", "submitted_legacy", "processing"].includes(context.status),
@@ -391,17 +416,44 @@ export default function ProjectPage() {
       {loadingGardens ? (
         <section className="project-empty-state"><Loader2 className="spin" /><h2>جاري فحص التقرير اليومي</h2></section>
       ) : reportLocked ? (
-        <section className="daily-report-locked-card">
-          {context?.status === "processing" ? <Loader2 className="spin" size={48} /> : <CheckCircle2 size={58} />}
-          <h1>{context?.status === "processing" ? "التقرير قيد الإرسال" : "شكرًا، تم إنجاز المهمة"}</h1>
-          <p>
+        <section className={`daily-report-locked-card daily-report-receipt ${context?.status === "processing" ? "processing" : "approved"}`}>
+          <div className="daily-status-ribbon">
+            <span className="daily-status-dot" />
+            <div><small>حالة التقرير</small><strong>{context?.status === "processing" ? "قيد الإرسال" : "تم اعتماده"}</strong></div>
+          </div>
+
+          <div className="daily-receipt-icon">
+            {context?.status === "processing" ? <Loader2 className="spin" size={46} /> : <FileCheck2 size={46} />}
+          </div>
+          <p className="daily-receipt-kicker">{project.name}</p>
+          <h1>{context?.status === "processing" ? "التقرير قيد الإرسال" : "تم اعتماد تقرير اليوم بنجاح"}</h1>
+          <p className="daily-receipt-message">
             {context?.status === "processing"
-              ? "يوجد إرسال جارٍ لهذا المشروع. لا يمكن بدء تقرير ثانٍ من جهاز آخر."
-              : `تم اعتماد تقرير المشروع بتاريخ ${dateLabel}. تم إغلاق الرفع لهذا التاريخ على جميع الأجهزة.`}
+              ? "يوجد إرسال جارٍ لهذا المشروع من جهاز آخر. سيتم تحديث الحالة تلقائيًا عند اكتماله."
+              : "تم استلام التقرير في النظام المركزي وإغلاق استقبال أي تقرير آخر لنفس التاريخ على جميع الأجهزة."}
           </p>
-          {context?.reportNumber && <strong dir="ltr">{context.reportNumber}</strong>}
-          {context?.status === "submitted_legacy" && <small>تم اكتشاف تقرير سابق من السجلات القديمة وحمايته من التكرار.</small>}
-          <Link href="/" className="primary-link">العودة للمشاريع</Link>
+
+          <div className="daily-receipt-grid">
+            <div><span>تاريخ التقرير</span><strong>{dateLabel}</strong></div>
+            <div><span>وقت الإرسال</span><strong>{formatArabicDateTime(context?.submittedAt)}</strong></div>
+            <div><span>تم الإرسال بواسطة</span><strong><UserRound size={17} /> {context?.workerName || managerName || "مسؤول المشروع"}</strong></div>
+            <div><span>عدد المواقع</span><strong>{context?.submittedGardens || context?.existingReportCount || 0}</strong></div>
+            <div><span>عدد الصور</span><strong><Images size={17} /> {context?.totalPhotos || 0}</strong></div>
+            <div><span>رقم التقرير</span><strong dir="ltr">{context?.reportNumber || "تقرير سابق"}</strong></div>
+          </div>
+
+          {context?.isBackfill ? (
+            <div className="daily-backfill-confirmation"><strong>تم إغلاق وضع التعويض</strong><span>اعتمد التقرير للتاريخ المحدد فقط، وأُغلقت نافذة التعويض تلقائيًا.</span></div>
+          ) : context?.status !== "processing" ? (
+            <div className="daily-next-opening"><Clock3 size={20} /><div><strong>يفتح استقبال تقرير جديد عند بداية يوم جديد</strong><span>الساعة 00:00 بتوقيت مكة المكرمة.</span></div></div>
+          ) : null}
+
+          {context?.status === "submitted_legacy" && <small className="daily-legacy-note">تم اكتشاف تقرير سابق من السجلات القديمة وحمايته من التكرار.</small>}
+          <div className="daily-sync-line"><RefreshCw size={15} /> آخر مزامنة مع النظام المركزي: {formatSyncTime(lastSyncedAt)}</div>
+          <div className="daily-receipt-actions">
+            <Link href="/" className="primary-link"><ArrowLeft size={18} /> العودة للمشاريع</Link>
+            {context?.status !== "processing" && <button type="button" className="print-receipt-button" onClick={() => window.print()}><Printer size={18} /> طباعة إثبات التسليم</button>}
+          </div>
         </section>
       ) : (
         <>

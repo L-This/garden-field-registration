@@ -17,6 +17,9 @@ export type DailyReportContext = {
   reportNumber?: string;
   submittedAt?: string;
   existingReportCount: number;
+  workerName?: string;
+  submittedGardens: number;
+  totalPhotos: number;
 };
 
 export type SubmitResult = {
@@ -88,6 +91,9 @@ export async function getDailyReportContext(projectDbId: string): Promise<DailyR
     reportNumber: row.report_number || undefined,
     submittedAt: row.submitted_at || undefined,
     existingReportCount: Number(row.existing_report_count || 0),
+    workerName: row.worker_name || undefined,
+    submittedGardens: Number(row.submitted_gardens || row.existing_report_count || 0),
+    totalPhotos: Number(row.total_photos || 0),
   };
 }
 

@@ -89,6 +89,8 @@ as $$
   );
 $$;
 
+drop function if exists public.field_report_context(uuid);
+
 create or replace function public.field_report_context(p_project_id uuid)
 returns table (
   report_date date,
@@ -97,7 +99,10 @@ returns table (
   submission_id uuid,
   report_number text,
   submitted_at timestamptz,
-  existing_report_count integer
+  existing_report_count integer,
+  worker_name text,
+  submitted_gardens integer,
+  total_photos integer
 )
 language plpgsql
 stable
@@ -109,6 +114,9 @@ declare
   v_is_backfill boolean := false;
   v_submission public.daily_report_submissions%rowtype;
   v_legacy_count integer := 0;
+  v_legacy_worker text;
+  v_legacy_submitted_at timestamptz;
+  v_legacy_photos integer := 0;
 begin
   select w.report_date, true
     into v_date, v_is_backfill
@@ -129,10 +137,19 @@ begin
   where s.project_id = p_project_id
     and s.report_date = v_date;
 
-  select count(*)::int into v_legacy_count
+  select count(*)::int, min(r.worker_name), max(r.created_at)
+    into v_legacy_count, v_legacy_worker, v_legacy_submitted_at
   from public.reports r
   where r.project_id = p_project_id
     and r.report_date = v_date;
+
+  if v_legacy_count > 0 then
+    select count(p.id)::int into v_legacy_photos
+    from public.photos p
+    join public.reports r on r.id = p.report_id
+    where r.project_id = p_project_id
+      and r.report_date = v_date;
+  end if;
 
   return query
   select
@@ -148,8 +165,11 @@ begin
     end,
     v_submission.id,
     v_submission.report_number,
-    v_submission.submitted_at,
-    v_legacy_count;
+    coalesce(v_submission.submitted_at, v_legacy_submitted_at),
+    v_legacy_count,
+    coalesce(v_submission.worker_name, v_legacy_worker),
+    coalesce(v_submission.submitted_gardens, v_legacy_count),
+    coalesce(v_submission.total_photos, v_legacy_photos);
 end;
 $$;
 
