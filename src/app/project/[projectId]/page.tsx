@@ -246,29 +246,17 @@ export default function ProjectPage() {
         return;
       }
 
-      const dayColumn = getDayColumnForDate(dailyContext.reportDate);
-      const { data: scheduleRows, error: schedulesError } = await supabase
-        .from("watering_schedules")
-        .select(`garden_id, daily_watering, ${dayColumn}`)
-        .eq("project_id", projectDbId)
-        .or(`daily_watering.eq.true,${dayColumn}.eq.true`);
-      if (schedulesError) throw schedulesError;
-
-      const ids = Array.from(new Set((scheduleRows || []).map((row) => String(row.garden_id)).filter(Boolean)));
-      if (!ids.length) {
-        setLoadingGardens(false);
-        return;
-      }
-
-      const { data: gardenRows, error: gardensError } = await supabase
-        .from("gardens")
-        .select("id, name")
-        .eq("project_id", projectDbId)
-        .eq("active", true)
-        .in("id", ids)
-        .order("created_at", { ascending: true });
+      const { data: gardenRows, error: gardensError } = await supabase.rpc("field_report_gardens", {
+        p_project_id: projectDbId,
+      });
       if (gardensError) throw gardensError;
-      setGardens((gardenRows || []).map((garden) => ({ id: garden.id, name: garden.name })));
+
+      setGardens(
+        (gardenRows || []).map((garden: { garden_id: string; garden_name: string }) => ({
+          id: garden.garden_id,
+          name: garden.garden_name,
+        })),
+      );
     } catch (error) {
       setPageError(error instanceof Error ? error.message : "تعذر تحميل حالة التقرير اليومية.");
     } finally {
@@ -408,7 +396,12 @@ export default function ProjectPage() {
       {context?.isBackfill && (
         <section className="daily-backfill-banner">
           <strong>فترة تعويض مفتوحة</strong>
-          <span>التقرير الحالي سيُعتمد بتاريخ {dateLabel} وليس بتاريخ اليوم.</span>
+          <span>
+            التقرير الحالي سيُعتمد بتاريخ {dateLabel} وليس بتاريخ اليوم — {context.backfillScopeMode === "selected"
+              ? `المواقع المختارة فقط (${context.allowedGardens})`
+              : `كامل المواقع المجدولة (${context.allowedGardens})`}.
+          </span>
+          {context.backfillNote && <small>{context.backfillNote}</small>}
         </section>
       )}
 

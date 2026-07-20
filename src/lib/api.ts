@@ -20,6 +20,12 @@ export type DailyReportContext = {
   workerName?: string;
   submittedGardens: number;
   totalPhotos: number;
+  backfillWindowId?: string;
+  backfillScopeMode?: 'all' | 'selected';
+  backfillNote?: string;
+  backfillOpenedBy?: string;
+  backfillClosesAt?: string;
+  allowedGardens: number;
 };
 
 export type SubmitResult = {
@@ -94,6 +100,12 @@ export async function getDailyReportContext(projectDbId: string): Promise<DailyR
     workerName: row.worker_name || undefined,
     submittedGardens: Number(row.submitted_gardens || row.existing_report_count || 0),
     totalPhotos: Number(row.total_photos || 0),
+    backfillWindowId: row.backfill_window_id || undefined,
+    backfillScopeMode: row.backfill_scope_mode || undefined,
+    backfillNote: row.backfill_note || undefined,
+    backfillOpenedBy: row.backfill_opened_by || undefined,
+    backfillClosesAt: row.backfill_closes_at || undefined,
+    allowedGardens: Number(row.allowed_gardens || 0),
   };
 }
 
@@ -161,15 +173,12 @@ function buildBasicReview(images: string[], duplicateHashCount: number): BasicRe
   return { status: 'rejected', score, reason: flags.join('، ') || 'اشتباه قوي', flags };
 }
 
-async function isGardenScheduledForDate(projectId: string, gardenId: string, reportDate: string) {
-  const dayColumn = getDayColumnForDate(reportDate);
-  const { data, error } = await supabase
-    .from('watering_schedules')
-    .select(`garden_id, daily_watering, ${dayColumn}`)
-    .eq('project_id', projectId)
-    .eq('garden_id', gardenId)
-    .or(`daily_watering.eq.true,${dayColumn}.eq.true`)
-    .maybeSingle();
+async function isGardenAllowedForReport(projectId: string, gardenId: string, reportDate: string) {
+  const { data, error } = await supabase.rpc('report_garden_is_allowed', {
+    p_project_id: projectId,
+    p_garden_id: gardenId,
+    p_report_date: reportDate,
+  });
   return !error && Boolean(data);
 }
 
@@ -218,9 +227,11 @@ export async function submitIrrigationReport(payload: SubmitPayload): Promise<Su
         ? 'تم إرسال تقرير هذا المشروع لهذا التاريخ مسبقًا، لذلك تم إيقاف الإرسال المكرر.'
         : beginError?.message?.includes('IN_PROGRESS')
           ? 'يوجد إرسال آخر قيد التنفيذ لهذا المشروع. انتظر قليلًا ثم حدّث الصفحة.'
-          : beginError?.message?.includes('SCHEDULE_COUNT_CHANGED')
-            ? 'تغيّر جدول الري أثناء تجهيز التقرير. حدّث الصفحة وأعد المحاولة.'
-            : `تعذر بدء التقرير اليومي: ${beginError?.message || 'خطأ غير معروف'}`,
+          : beginError?.message?.includes('REPORT_SCOPE_CHANGED')
+            ? 'تغيّرت المواقع المفتوحة للتقرير أثناء التجهيز. حدّث الصفحة وأعد المحاولة.'
+            : beginError?.message?.includes('NO_GARDENS_AVAILABLE')
+              ? 'لا توجد مواقع مفتوحة لهذا التقرير.'
+              : `تعذر بدء التقرير اليومي: ${beginError?.message || 'خطأ غير معروف'}`,
       sent: 0,
       duplicates: duplicate ? payload.expectedGardens : 0,
       failed: duplicate ? 0 : payload.expectedGardens,
@@ -233,7 +244,7 @@ export async function submitIrrigationReport(payload: SubmitPayload): Promise<Su
 
   try {
     for (const record of completeRecords) {
-      if (!(await isGardenScheduledForDate(project.id, record.gardenId, payload.reportDate))) {
+      if (!(await isGardenAllowedForReport(project.id, record.gardenId, payload.reportDate))) {
         throw new Error(`الموقع ${record.gardenName} غير مجدول في تاريخ التقرير.`);
       }
 
