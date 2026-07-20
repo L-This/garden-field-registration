@@ -18,7 +18,6 @@ import {
   ZoomIn,
   Clock3,
   FileCheck2,
-  Printer,
   RefreshCw,
   UserRound,
   Images,
@@ -419,7 +418,7 @@ export default function ProjectPage() {
         <section className={`daily-report-locked-card daily-report-receipt ${context?.status === "processing" ? "processing" : "approved"}`}>
           <div className="daily-status-ribbon">
             <span className="daily-status-dot" />
-            <div><small>حالة التقرير</small><strong>{context?.status === "processing" ? "قيد الإرسال" : "تم اعتماده"}</strong></div>
+            <strong>{context?.status === "processing" ? "التقرير قيد الإرسال" : "تم اعتماد التقرير"}</strong>
           </div>
 
           <div className="daily-receipt-icon">
@@ -430,29 +429,29 @@ export default function ProjectPage() {
           <p className="daily-receipt-message">
             {context?.status === "processing"
               ? "يوجد إرسال جارٍ لهذا المشروع من جهاز آخر. سيتم تحديث الحالة تلقائيًا عند اكتماله."
-              : "تم استلام التقرير في النظام المركزي وإغلاق استقبال أي تقرير آخر لنفس التاريخ على جميع الأجهزة."}
+              : "تم اعتماد التقرير وإغلاق استقبال التقارير لهذا اليوم."}
           </p>
 
           <div className="daily-receipt-grid">
             <div><span>تاريخ التقرير</span><strong>{dateLabel}</strong></div>
             <div><span>وقت الإرسال</span><strong>{formatArabicDateTime(context?.submittedAt)}</strong></div>
             <div><span>تم الإرسال بواسطة</span><strong><UserRound size={17} /> {context?.workerName || managerName || "مسؤول المشروع"}</strong></div>
-            <div><span>عدد المواقع</span><strong>{context?.submittedGardens || context?.existingReportCount || 0}</strong></div>
-            <div><span>عدد الصور</span><strong><Images size={17} /> {context?.totalPhotos || 0}</strong></div>
-            <div><span>رقم التقرير</span><strong dir="ltr">{context?.reportNumber || "تقرير سابق"}</strong></div>
+            <div><span>عدد المواقع</span><strong>{context?.submittedGardens || context?.existingReportCount || 0} موقع</strong></div>
+            <div><span>عدد الصور</span><strong><Images size={17} /> {context?.totalPhotos || 0} صورة</strong></div>
           </div>
 
           {context?.isBackfill ? (
             <div className="daily-backfill-confirmation"><strong>تم إغلاق وضع التعويض</strong><span>اعتمد التقرير للتاريخ المحدد فقط، وأُغلقت نافذة التعويض تلقائيًا.</span></div>
           ) : context?.status !== "processing" ? (
-            <div className="daily-next-opening"><Clock3 size={20} /><div><strong>يفتح استقبال تقرير جديد عند بداية يوم جديد</strong><span>الساعة 00:00 بتوقيت مكة المكرمة.</span></div></div>
+            <div className="daily-next-opening">
+              <Clock3 size={24} />
+              <div><small>التقرير القادم</small><strong>غدًا</strong><span>00:00 بتوقيت مكة المكرمة</span></div>
+            </div>
           ) : null}
 
-          {context?.status === "submitted_legacy" && <small className="daily-legacy-note">تم اكتشاف تقرير سابق من السجلات القديمة وحمايته من التكرار.</small>}
           <div className="daily-sync-line"><RefreshCw size={15} /> آخر مزامنة مع النظام المركزي: {formatSyncTime(lastSyncedAt)}</div>
           <div className="daily-receipt-actions">
-            <Link href="/" className="primary-link"><ArrowLeft size={18} /> العودة للمشاريع</Link>
-            {context?.status !== "processing" && <button type="button" className="print-receipt-button" onClick={() => window.print()}><Printer size={18} /> طباعة إثبات التسليم</button>}
+            <Link href="/" className="primary-link daily-return-projects"><ArrowLeft size={20} /> العودة للمشاريع</Link>
           </div>
         </section>
       ) : (
